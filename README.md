@@ -6,15 +6,16 @@
 TBD
 
 
-## Running applicatioon 
+## Running application 
 cd bin  
 ./easy-run.bat
 
 
 ## Web address
+web page  
 http://localhost:5173/   
 
-back end server:
+back end server:  
 http://127.0.0.1:5103  
 
 ## Preparing environment
@@ -53,3 +54,12 @@ Make it like below
 
 ![img.png](docs/img.png)  
 ![img.png](docs/img_1.png)  
+
+
+
+### Architecture
+
+- The suer enters the paramertrs in the web page and clicks submit  
+- The backend (Flask) app catches paramerts and writes into shared/parameter.json   
+- The engin reads the file every 15 seconds and evaluates conditions ...  
+- 

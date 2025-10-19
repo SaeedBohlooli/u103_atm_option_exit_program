@@ -57,6 +57,7 @@ os.makedirs(log_dir, exist_ok=True)
 
 application_state_file_path = f'{intermediate_dir}/84-application_state.csv'
 user_input_file_path = f'{shared_dir}/params.json'
+executed_orders_from_ib_ver_2_file_path = f'{intermediate_dir}/90-executed_orders_from_ib_ver_2.csv'
 
 def load_config(path = 'config.yaml') -> dict:
     with open(path, 'r') as file:
@@ -334,7 +335,7 @@ def send_order():
         logger.info(f"Order sent ....")
         logger.info(trade)
 
-    exit(1)
+    return
 
 def has_open_option_positions():
     # Get all current positions
@@ -478,6 +479,16 @@ def get_all_open_orders():
     open_orders = ib.reqAllOpenOrders()
     return open_orders
 
+def drop_dupplicates(file_path, unique_column=None, keep='last'):
+    # Drop dupplicaes
+    if os.path.exists(file_path):
+        df = pd.read_csv(file_path)
+        if unique_column is None:
+            df = df.drop_duplicates(keep=f'{keep}')
+        else: # has fields ...
+            df = df.drop_duplicates(subset=[f'{unique_column}'], keep=f'{keep}')
+        df.to_csv(file_path, index=False, mode='w')
+    return
 def cancel_open_orders(symbol):
     if not app_config['cancel_open_orders_on_start']:
         return
@@ -562,6 +573,8 @@ def open_order_if_not_exisit():
         create_option_contract(strike=current_price, expiry=expiry, right=right) # adds to contracts
 
         send_order()
+
+    return
 
 def read_user_input_from_shared_folder():
     file_path = user_input_file_path
