@@ -22,6 +22,7 @@ import json
 yaml = YAML()
 yaml.preserve_quotes = True  # Optional: preserve quotes if any
 
+sys.path.insert(0, f'../')
 for dir_1 in os.listdir(os.path.join('../')):
     if (dir_1.startswith("a") or dir_1.startswith("u") ):
         sys.path.insert(0, f'../{dir_1}')
