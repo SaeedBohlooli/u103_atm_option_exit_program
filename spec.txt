@@ -1,0 +1,9 @@
+
+
+
+
+
+npm create vite@latest atm-exit-ui -- --template react
+
+
+1- open TWO, one call, one put.

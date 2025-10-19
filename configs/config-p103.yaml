@@ -1,0 +1,20 @@
+symbols: ['SPXW'] #, 'MNQ'
+# 6 * 2 * 60
+
+logging_level: logging.INFO
+
+symbol: SPXW
+
+
+
+run_should_take_seconds: 15
+
+side: short
+
+
+delete_user_input_after_read: True
+
+test:
+  open:
+    strike:
+    quantitiy: 10
