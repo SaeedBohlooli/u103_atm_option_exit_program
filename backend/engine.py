@@ -30,22 +30,22 @@ for dir_1 in os.listdir(os.path.join('../')):
 from utils import miscutils
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--p-id', help="active portfolio", default='000')
+parser.add_argument('--portfolio-id', help="active portfolio", default='000')
 args = parser.parse_args()
-p_id = args.p_id
-if p_id == '000':
+portfolio_id = args.portfolio_id
+if portfolio_id == '000':
     print('you need to pass portfoli like  --p-id=p100')
     exit()
 
-intermediate_dir = f'../../portfolios/intermediate/{p_id}'
+intermediate_dir = f'../../portfolios/intermediate/{portfolio_id}'
 flatten_fill_file_path = f'{intermediate_dir}/86-ib-flatten_fill_df.csv'
 
 configs_folder = f'../configs'
-portfolio_dir = f'../../portfolios/results/{p_id}'
-reports_dir = f'../../portfolios/reports/{p_id}'
-intermediate_dir = f'../../portfolios/intermediate/{p_id}'
-log_dir = f'../../portfolios/logs/{p_id}'
-detailed_log_dir = f'../../portfolios/detailed-logs/{p_id}'
+portfolio_dir = f'../../portfolios/results/{portfolio_id}'
+reports_dir = f'../../portfolios/reports/{portfolio_id}'
+intermediate_dir = f'../../portfolios/intermediate/{portfolio_id}'
+log_dir = f'../../portfolios/logs/{portfolio_id}'
+detailed_log_dir = f'../../portfolios/detailed-logs/{portfolio_id}'
 shared_dir = f'../shared'
 
 os.makedirs(portfolio_dir, exist_ok=True)
@@ -55,7 +55,7 @@ os.makedirs(detailed_log_dir, exist_ok=True)
 os.makedirs(log_dir, exist_ok=True)
 
 
-shared_parameters_map_file_path =  f'{intermediate_dir}/84-SHARED_PARAMETERS_MAP.csv'
+application_state_file_path = f'{intermediate_dir}/84-application_state.csv'
 user_input_file_path = f'{shared_dir}/params.json'
 
 def load_config(path = 'config.yaml') -> dict:
@@ -67,7 +67,7 @@ def load_config(path = 'config.yaml') -> dict:
 
 def load_app_config():
     global app_config
-    conf_file = f'{configs_folder}/config-{p_id}.yaml'
+    conf_file = f'{configs_folder}/config-{portfolio_id}.yaml'
     print(f'loading config file ....conf_file: {conf_file}')
     config = load_config(conf_file)
     app_config = config
@@ -76,7 +76,7 @@ def load_app_config():
 def reload_app_config():
     global app_config
     logger.info('loading config file ....')
-    config = load_config(f'{configs_folder}/config-{p_id}.yaml')#['default']
+    config = load_config(f'{configs_folder}/config-{portfolio_id}.yaml')#['default']
     logger.info('loading config file is done ....')
     app_config = config
     return app_config
@@ -90,7 +90,7 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=eval(logging_level), format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 
-r_handler = logging.handlers.RotatingFileHandler(filename=f"{log_dir}/{p_id}.log", maxBytes= 5 * 1024 * 1024, backupCount=150)
+r_handler = logging.handlers.RotatingFileHandler(filename=f"{log_dir}/{portfolio_id}.log", maxBytes=5 * 1024 * 1024, backupCount=150)
 f_format = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 r_handler.setFormatter(f_format)
 logger.addHandler(r_handler)
@@ -380,7 +380,7 @@ def update_config_and_save(config, key, value):
         logger.info(f"in update_config_and_save, key: {key}, existing value: {existing_value}, new value: {value} ")
         app_config = reload_app_config()
         app_config[key] = value
-        file = f'{configs_folder}/config-{p_id}.yaml'
+        file = f'{configs_folder}/config-{portfolio_id}.yaml'
         with open(file, 'w') as f:
             yaml.dump(app_config, f)
     return
@@ -525,28 +525,28 @@ def my_tabulate(x):
         return "Error in tabular ..."
 
 
-def dump_SHARED_PARAMETERS_MAP_to_file():
-    file_path = shared_parameters_map_file_path
+def dump_application_state_to_file():
+    file_path = application_state_file_path
     with open(file_path, 'w') as f:
-        logger.info(f"saving at file_path: {file_path} , SHARED_PARAMETERS_MAP: {SHARED_PARAMETERS_MAP} ")
-        json.dump(SHARED_PARAMETERS_MAP, f, indent=4)
+        logger.info(f"saving at file_path: {file_path} , application_state: {application_state} ")
+        json.dump(application_state, f, indent=4)
         logger.info(f"saving done. ")
 
     return
 
-def load_SHARED_PARAMETERS_MAP_from_file():
-    global SHARED_PARAMETERS_MAP
-    file_path = shared_parameters_map_file_path
+def load_application_state_from_file():
+    global application_state
+    file_path = application_state_file_path
     if os.path.exists(file_path):
         with open(file_path, 'r') as f:
             logger.info(f"loading from file_path: {file_path} ")
-            SHARED_PARAMETERS_MAP = json.load(f)
-        logger.info(f"loaded, SHARED_PARAMETERS_MAP: {SHARED_PARAMETERS_MAP}")
+            application_state = json.load(f)
+        logger.info(f"loaded, application_state: {application_state}")
     return
 
-def print_SHARED_PARAMETERS_MAP(SHARED_PARAMETERS_MAP, msg = ''):
+def print_application_state(application_state, msg = ''):
 
-    logger.warning(f"{msg}\n{pprint.pformat(SHARED_PARAMETERS_MAP)}")
+    logger.warning(f"{msg}\n{pprint.pformat(application_state)}")
     return
 
 def has_open_trade(type='option'):
@@ -577,8 +577,7 @@ def read_user_input_from_shared_folder():
 if __name__ == "__main__":
     ib_config = load_ib_config()
     ib = create_ib_connection()
-    exit(1)
-    SHARED_PARAMETERS_MAP = {}
+    application_state = {}
     contracts = [] # This is for creating ...
     flatten_fill_df = load_csv_to_df(flatten_fill_file_path)
     flatten_trade_df = pd.DataFrame()
@@ -595,7 +594,7 @@ if __name__ == "__main__":
             date_yyyy_mm_dd_w_time = now.strftime("%Y-%m-%d %H:%M:%S")
             run_date_time = now.strftime("%Y-%m-%d__%H-%M-%S")
             u_run_number = f"{now.strftime('%Y%m%d-%H%M%S')}--{run_number}"
-            logger.info(f"==================== j: {run_number}  run_date_time: {run_date_time}:  u_run_number: {u_run_number}")
+            logger.info(f"==================== run_number: {run_number}  run_date_time: {run_date_time}:  u_run_number: {u_run_number}")
             current_price = get_current_price()
 
             if False:
@@ -607,13 +606,14 @@ if __name__ == "__main__":
             trades_to_monitor = find_trades_to_monitor()
             check_conditions_and_exit(trades_to_monitor)
             time.sleep(10)
-            exit(1)
 
 
-            dump_SHARED_PARAMETERS_MAP_to_file()
-            print_SHARED_PARAMETERS_MAP(SHARED_PARAMETERS_MAP)
+            dump_application_state_to_file()
+            print_application_state(application_state)
             end_time = time.time()
             sleep_enough()
+            exit(1)
+
         except Exception as e:
             consequence_exception = consequence_exception + 1
             logger.error(f"X error: {e}")

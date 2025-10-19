@@ -2,11 +2,12 @@
 
 set FILE=app.lock
 if exist %FILE% (
-  echo 'File %FILE% exists.'
+  echo 'File %FILE% exists. probably the application is running. '
+  pause 5
 ) else (
   echo 'File %FILE% does not exist.
   echo 'Ok'> %FILE%
-@REM   start cmd /k python ..\u102_option_trading\option_trading_unbalanced_butterfly.py  --p-id=p102
-  start cmd /k "call ..\venv\Scripts\activate && python ..\backend\engine.py  --p-id=p103"
+  start cmd /k "call   python ..\backend\engine.py  --portfolio-id=p103"
+  start cmd /k "call   python ..\backend\backend.py  --portfolio-id=p103"
 
 )

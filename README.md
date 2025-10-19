@@ -10,6 +10,13 @@ TBD
 cd bin  
 ./easy-run.bat
 
+
+## Web address
+http://localhost:5173/   
+
+back end server:
+http://127.0.0.1:5103  
+
 ## Preparing environment
 This is one time activity to setup the environment 
 
