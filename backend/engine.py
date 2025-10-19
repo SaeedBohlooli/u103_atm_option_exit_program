@@ -576,6 +576,7 @@ def read_user_input_from_shared_folder():
 if __name__ == "__main__":
     ib_config = load_ib_config()
     ib = create_ib_connection()
+    exit(1)
     SHARED_PARAMETERS_MAP = {}
     contracts = [] # This is for creating ...
     flatten_fill_df = load_csv_to_df(flatten_fill_file_path)
