@@ -6,6 +6,10 @@
 TBD
 
 
+## Running applicatioon 
+cd bin  
+./easy-run.bat
+
 ## Preparing environment
 This is one time activity to setup the environment 
 
