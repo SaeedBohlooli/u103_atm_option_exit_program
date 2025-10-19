@@ -1,9 +1,13 @@
 # u103_atm_option_exit_program
 
 
+## Deploying Release 1.0 
+
+TBD
 
 
-## Preparing environment 
+## Preparing environment
+This is one time activity to setup the environment 
 
 ### install python 
 https://www.python.org/ftp/python/3.11.0/python-3.11.0-amd64.exe
@@ -22,5 +26,14 @@ https://nodejs.org/en/download
 in the C: drive   
 mkdir code  
 cd code   
-git checkout https://github.com/SaeedBohlooli/u103_atm_option_exit_program.git
-cd 
+git checkout https://github.com/SaeedBohlooli/u103_atm_option_exit_program.git  
+cd u103_atm_option_exit_program  
+python -version  
+pip install -r requirements.txt  
+
+
+### TWS
+Make it like below
+
+![img.png](docs/img.png)  
+![img.png](docs/img_1.png)  
