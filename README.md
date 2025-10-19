@@ -9,6 +9,11 @@ TBD
 ## Preparing environment
 This is one time activity to setup the environment 
 
+### Remote access 
+
+we need either rust desk or teamviewer  
+rustdesk:  https://rustdesk.com/  
+
 ### install python 
 https://www.python.org/ftp/python/3.11.0/python-3.11.0-amd64.exe
 
