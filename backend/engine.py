@@ -596,9 +596,10 @@ def update_config_and_save(config, key, value):
         with open(file, 'w') as f:
             yaml.dump(app_config, f)
     return
-def open_order_if_not_exisit():
+def open_order_if_not_exists():
     # if not has_open_trade(type='option'):
     if app_config['open_position']:
+        logger.info(f"in open_order_if_not_exists, ")
         update_config_and_save(app_config,'open_position' , False)
         expiry = format_yyyymmdd(next_business_day())
         # current_price = 6710
@@ -646,14 +647,13 @@ if __name__ == "__main__":
             app_config = load_app_config()
             current_price = get_current_price()
 
-            if run_number == 1:
-                open_order_if_not_exisit()
+            open_order_if_not_exists()
 
             # get_all_open_option_positions()
             user_input_dic = read_user_input_from_shared_folder()
 
-            positionss_to_monitor = find_positions_to_monitor()
-            check_conditions_and_exit(positionss_to_monitor)
+            positions_to_monitor = find_positions_to_monitor()
+            check_conditions_and_exit(positions_to_monitor)
             time.sleep(10)
 
 
