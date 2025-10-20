@@ -5,12 +5,13 @@ logging_level: logging.INFO
 
 symbol: SPXW
 
-
-
 run_should_take_seconds: 15
-
 side: short
 
+open_position: True
+
+run_condition_checker: True
+close_condition: base_atm_straddle * multiplier < call_ask + put_ask
 
 delete_user_input_after_read: True
 

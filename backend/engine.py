@@ -179,15 +179,15 @@ def get_asks(call_contract, put_contract):
     ib.sleep(2)
 
     # --- Step 7: Extract ask prices ---
-    logger.info(f" call_ticker: {call_ticker}")
-    logger.info(f" put_ticker: {put_ticker}")
+    logger.info(f"call_ticker: {call_ticker}")
+    logger.info(f"put_ticker: {put_ticker}")
     call_ask = call_ticker.ask
     put_ask = put_ticker.ask
 
     logger.info(f"CALL Ask: {call_ask}")
     logger.info(f"PUT  Ask: {put_ask}")
 
-    return  call_ask, put_ask
+    return call_ask, put_ask
 
 def check_conditions(call_ask, put_ask):
     can_close = False
@@ -200,7 +200,7 @@ def check_conditions(call_ask, put_ask):
     #logger.info(f"user_input_dic: {json.dump(user_input_dic, inden=2)}")
     # logger.info(f"user_input_dic: {tabulate(user_input_dic, headers='keys', tablefmt='psql')}")
 
-    condition = " base_atm_straddle * multiplier < call_ask + put_ask"
+    condition = app_config['close_condition']
     condition_eval_result = eval(condition)
     logger.info(f"condition: {condition}")
     logger.info(f"condition_eval_result: {condition_eval_result}")
@@ -212,10 +212,10 @@ def check_conditions(call_ask, put_ask):
 def close_option_positions(positions):
 
     for pos in positions:
-        c = pos.contract
+        contract = pos.contract
         qty = pos.position
 
-        if c.secType == 'OPT' and qty != 0:
+        if contract.secType == 'OPT' and qty != 0:
             # --- Step 2: Determine opposite action ---
             action = 'SELL' if qty > 0 else 'BUY'
             close_qty = abs(qty)
@@ -225,32 +225,47 @@ def close_option_positions(positions):
             order.orderRef = f"CLOSE-{u_run_number}"
 
             # --- Step 4: Place the order ---
-            trade = ib.placeOrder(c, order)
+            contract.exchange = 'SMART'  # or 'CBOE' if your account requires it
+            trade = ib.placeOrder(contract, order)
             trade.fillEvent += on_fill
+            ib.sleep(0.5)  # small delay to avoid pacing violations
+
             logger.info(f"trade: {trade}")
             # Convert to DataFrame automatically
             df = ib_util.df([trade])
 
             logger.info(f"close_option_positions, trade:\n{df.to_markdown()}")
-            logger.info(f"Closing {c.localSymbol} | Action: {action} {close_qty}")
+            logger.info(f"Closing {contract.localSymbol}, action: {action}, close_qty: {close_qty}")
 
     return
 
 def check_conditions_and_exit(positions):
-    expiry, atm_strike_price= get_closest_expiry_and_atm_strike()
+    if not app_config['run_condition_checker']:
+        return False
+
+    expiry, atm_strike_price = get_closest_expiry_and_atm_strike()
     call_contract, put_contract = create_call_and_contracts(expiry, atm_strike_price)
     call_ask, put_ask = get_asks(call_contract, put_contract)
     can_close = check_conditions(call_ask, put_ask)
+    logger.info(f"can_close: {can_close}")
     if can_close:
         close_option_positions(positions)
     return
 
 
-def find_trades_to_monitor():
+def find_positions_to_monitor():
     positions = get_all_open_option_positions()
-    # positions = positions[-2:]
     logger.info(f"positions_to_monitor: \n{tabulate(positions, headers='keys', tablefmt='psql')}")
-    return positions
+    ps = []
+    for p in positions:
+        logger.info(f"p: {p}")
+        if p.contract.symbol == 'SPX' and p.contract.tradingClass == 'SPXW':
+            logger.info(f"adding it to the list ...")
+            ps.append(p)
+
+    logger.info(f"in find_positions_to_monitor()")
+    logger.info(f"\n{my_tabulate(ps)}")
+    return ps
 
 def get_all_open_option_positions():
     positions = ib.positions()
@@ -367,7 +382,7 @@ def sleep_enough():
     need_sleep_seconds = 0
     if run_spend_time < run_should_take:
         need_sleep_seconds = run_should_take - run_spend_time
-    logger.warning(f'{run_number}) run_spend_time: {run_spend_time} seconds, run_should_take: {run_should_take}')
+    logger.warning(f'{run_number}) {u_run_number}, run_spend_time: {run_spend_time} seconds, run_should_take: {run_should_take}')
     time.sleep(need_sleep_seconds)
     return
 
@@ -449,6 +464,12 @@ def on_fill(trade, fill):
     logger.info(f":flatten :{flatten_dic}")
     flatten_trade_df = pd.concat([flatten_trade_df, pd.DataFrame([flatten_dic])], ignore_index=True)
     #logger.info(f"flatten_trade_df:\n {flatten_trade_df.to_markdown()}")
+
+    df = ib_util.df([trade])
+    logger.info(f"on_fill, trade:\n{df.to_markdown()}")
+
+    df = ib_util.df([fill])
+    logger.info(f"on_fill, fill:\n{df.to_markdown()}")
 
     return
 
@@ -563,8 +584,22 @@ def print_application_state(application_state, msg = ''):
 def has_open_trade(type='option'):
     return False
 
+
+def update_config_and_save(config, key, value):
+    global app_config
+    existing_value = app_config[key]
+    if value != existing_value:
+        logger.info(f"in update_config_and_save, key: {key}, existing value: {existing_value}, new value: {value} ")
+        app_config = reload_app_config()
+        app_config[key] = value
+        file = f'{configs_folder}/config-{portfolio_id}.yaml'
+        with open(file, 'w') as f:
+            yaml.dump(app_config, f)
+    return
 def open_order_if_not_exisit():
-    if not has_open_trade(type='option'):
+    # if not has_open_trade(type='option'):
+    if app_config['open_position']:
+        update_config_and_save(app_config,'open_position' , False)
         expiry = format_yyyymmdd(next_business_day())
         # current_price = 6710
         right = 'C'
@@ -608,16 +643,17 @@ if __name__ == "__main__":
             run_date_time = now.strftime("%Y-%m-%d__%H-%M-%S")
             u_run_number = f"{now.strftime('%Y%m%d-%H%M%S')}--{run_number}"
             logger.info(f"==================== run_number: {run_number}  run_date_time: {run_date_time}:  u_run_number: {u_run_number}")
+            app_config = load_app_config()
             current_price = get_current_price()
 
-            if False:
+            if run_number == 1:
                 open_order_if_not_exisit()
 
-            get_all_open_option_positions()
+            # get_all_open_option_positions()
             user_input_dic = read_user_input_from_shared_folder()
 
-            trades_to_monitor = find_trades_to_monitor()
-            check_conditions_and_exit(trades_to_monitor)
+            positionss_to_monitor = find_positions_to_monitor()
+            check_conditions_and_exit(positionss_to_monitor)
             time.sleep(10)
 
 
@@ -625,7 +661,6 @@ if __name__ == "__main__":
             print_application_state(application_state)
             end_time = time.time()
             sleep_enough()
-            exit(1)
 
         except Exception as e:
             consequence_exception = consequence_exception + 1
