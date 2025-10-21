@@ -191,15 +191,17 @@ def get_asks(call_contract, put_contract):
 
 def check_conditions(call_ask, put_ask):
     can_close = False
-    logger.info(f"user_input_dic: {user_input_dic}")
+
     base_atm_straddle = user_input_dic.get('base_atm_straddle',-1) # used in condition
     contracts = user_input_dic.get('contracts',-1)  # used in condition
     multiplier = user_input_dic.get('multiplier', -1)  # used in condition
-    strike = user_input_dic.get('strike' ,-1)  # used in condition
+    strike = user_input_dic.get('strike',-1)  # used in condition
 
-    #logger.info(f"user_input_dic: {json.dump(user_input_dic, inden=2)}")
+    logger.info(f"user_input_dic: {json.dumps(user_input_dic, indent=2)}")
+    logger.info(f"call_ask: {call_ask}, put_ask: {put_ask}")
     # logger.info(f"user_input_dic: {tabulate(user_input_dic, headers='keys', tablefmt='psql')}")
 
+    #  close_condition: base_atm_straddle * multiplier < call_ask + put_ask
     condition = app_config['close_condition']
     condition_eval_result = eval(condition)
     logger.info(f"condition: {condition}")
@@ -209,8 +211,10 @@ def check_conditions(call_ask, put_ask):
 
     return can_close
 
-def close_option_positions(positions):
-
+def close_option_positions(positions, close_qty):
+    if close_qty == 0:
+        logger.warning(f"close_option_positions(), we dont't close , close_qtyL{close_qty}")
+        return
     for pos in positions:
         contract = pos.contract
         qty = pos.position
@@ -218,7 +222,8 @@ def close_option_positions(positions):
         if contract.secType == 'OPT' and qty != 0:
             # --- Step 2: Determine opposite action ---
             action = 'SELL' if qty > 0 else 'BUY'
-            close_qty = abs(qty)
+            if close_qty > abs(qty):
+                logger.warning(f"close_option_positions(), trying to close more than open...close_qty:{close_qty}, qty: {qty} ")
 
             # --- Step 3: Create market order to close ---
             order = MarketOrder(action, close_qty)
@@ -230,11 +235,11 @@ def close_option_positions(positions):
             trade.fillEvent += on_fill
             ib.sleep(0.5)  # small delay to avoid pacing violations
 
-            logger.info(f"trade: {trade}")
+            logger.info(f"close_option_positions(), trade: {trade}")
             # Convert to DataFrame automatically
             df = ib_util.df([trade])
 
-            logger.info(f"close_option_positions, trade:\n{df.to_markdown()}")
+            logger.info(f"close_option_positions(), trade:\n{df.to_markdown()}")
             logger.info(f"Closing {contract.localSymbol}, action: {action}, close_qty: {close_qty}")
 
     return
@@ -247,13 +252,14 @@ def check_conditions_and_exit(positions):
     call_contract, put_contract = create_call_and_contracts(expiry, atm_strike_price)
     call_ask, put_ask = get_asks(call_contract, put_contract)
     can_close = check_conditions(call_ask, put_ask)
+    close_quantity = user_input_dic.get('contracts', 0)
     logger.info(f"can_close: {can_close}")
     if can_close:
-        close_option_positions(positions)
+        close_option_positions(positions, close_quantity)
     return
 
 
-def find_positions_to_monitor():
+def find_option_positions_to_monitor():
     positions = get_all_open_option_positions()
     logger.info(f"positions_to_monitor: \n{tabulate(positions, headers='keys', tablefmt='psql')}")
     ps = []
@@ -652,9 +658,8 @@ if __name__ == "__main__":
             # get_all_open_option_positions()
             user_input_dic = read_user_input_from_shared_folder()
 
-            positions_to_monitor = find_positions_to_monitor()
+            positions_to_monitor = find_option_positions_to_monitor()
             check_conditions_and_exit(positions_to_monitor)
-            time.sleep(10)
 
 
             dump_application_state_to_file()
