@@ -158,7 +158,7 @@ def get_closest_expiry_and_atm_strike():# --- Step 1: Define SPX underlying ---
     strikes = sorted(chain.strikes)
     atm_strike = min(strikes, key=lambda s: abs(s - underlying_price))
 
-    logger.info(f"ATM Strike:{atm_strike}")
+    logger.info(f"ATM Strike: {atm_strike}")
     return expiry, atm_strike
 
 def create_call_and_contracts(expiry, strike):
@@ -229,8 +229,9 @@ def file_to_delete(file_to_delete):
         logger.error(f"An error occurred: {e}")
 def close_option_positions(positions, close_qty, close_strike):
     if close_qty == 0:
-        logger.info(f"close_option_positions(), we dont't close , close_qtyL{close_qty}")
+        logger.info(f"close_option_positions(), we don't close , close_qtyL{close_qty}")
         return
+    option_position_close = False
     for pos in positions:
         contract = pos.contract
         qty = pos.position
@@ -258,7 +259,9 @@ def close_option_positions(positions, close_qty, close_strike):
             logger.info(f"close_option_positions(), trade:\n{df.to_markdown()}")
             logger.info(f"Closing {contract.localSymbol}, action: {action}, close_qty: {close_qty}")
 
-    return True
+            option_position_close = True
+
+    return option_position_close
 
 def check_conditions_and_exit(positions):
     global user_input_dic
@@ -367,7 +370,7 @@ def create_option_contract(strike, expiry, right, exchange="CBOE", symbol='SPX',
 
 def send_order():
     global contracts
-    total_quantity = 3
+    total_quantity = 1
     # for
     for contract in contracts:
         order = MarketOrder('BUY', totalQuantity=total_quantity)
@@ -648,6 +651,8 @@ def read_user_input_from_shared_folder():
             logger.info(f"loading from file_path: {file_path} ")
             user_input_dic = json.load(f)
         logger.info(f"loaded, user_input_dic: {user_input_dic}")
+    else:
+        logger.warning(f"File does not exist. {file_path}")
     return user_input_dic
 
 
@@ -670,6 +675,7 @@ if __name__ == "__main__":
             date_yyyy_mm_dd = now.strftime("%Y-%m-%d")
             date_yyyy_mm_dd_w_time = now.strftime("%Y-%m-%d %H:%M:%S")
             run_date_time = now.strftime("%Y-%m-%d__%H-%M-%S")
+            current_hh_mm_ny = int(now.strftime("%H%M"))
             u_run_number = f"{now.strftime('%Y%m%d-%H%M%S')}--{run_number}"
             logger.info(f"==================== run_number: {run_number}  run_date_time: {run_date_time}:  u_run_number: {u_run_number}")
             app_config = load_app_config()
@@ -685,7 +691,9 @@ if __name__ == "__main__":
 
 
             dump_application_state_to_file()
-            print_application_state(application_state)
+            print_application_state(application_state, 'application_state')
+            print_application_state(user_input_dic, 'user_input_dic')
+
             end_time = time.time()
             sleep_enough()
 

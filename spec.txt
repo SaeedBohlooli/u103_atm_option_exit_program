@@ -1,18 +1,15 @@
 
-
-
-
-
-npm create vite@latest atm-exit-ui -- --template react
-
-
-1- open TWO, one call, one put.
-
-
-- check ATM price
-
+Items to check:
 
 notes from demo
-- make sure ATM strike gets updated in each loop run is 10 secs
-- test if we short two call /put , make sure close will be long
-- have a time check on the condition check
+[]  make sure ATM strike gets updated in each loop run is 10 secs
+  Confirmed
+[] test if we short two call /put , make sure close will be long
+  Confirmed
+[] have a time check on the condition check
+   condition added for 859 < current_hh_mm_ny < 1559
+
+
+
+# ################
+npm create vite@latest atm-exit-ui -- --template react
