@@ -192,14 +192,20 @@ def get_asks(call_contract, put_contract):
 def check_conditions(call_ask, put_ask):
     can_close = False
 
-    base_atm_straddle = user_input_dic.get('base_atm_straddle',-1) # used in condition
-    contracts = user_input_dic.get('contracts',-1)  # used in condition
-    multiplier = user_input_dic.get('multiplier', -1)  # used in condition
+    base_atm_straddle = user_input_dic.get('base_atm_straddle',0) # used in condition
+    contracts = user_input_dic.get('contracts',0)  # used in condition
+    multiplier = user_input_dic.get('multiplier', 0)  # used in condition
     strike = user_input_dic.get('strike',-1)  # used in condition
-
-    logger.info(f"user_input_dic: {json.dumps(user_input_dic, indent=2)}")
+    logger.info(f"user_input_dic:\n {json.dumps(user_input_dic, indent=2)}")
+    logger.info(f"Parameters from user: ")
+    logger.info(f"base_atm_straddle: {base_atm_straddle}")
+    logger.info(f"contracts: {contracts}")
+    logger.info(f"multiplier: {multiplier}")
+    logger.info(f"strike: {strike}")
     logger.info(f"call_ask: {call_ask}, put_ask: {put_ask}")
-    # logger.info(f"user_input_dic: {tabulate(user_input_dic, headers='keys', tablefmt='psql')}")
+    if base_atm_straddle == 0 or contracts ==0 or multiplier == 0 or strike == 0:
+        logger.warning("The user input file is not there... ")
+        return False
 
     #  close_condition: base_atm_straddle * multiplier < call_ask + put_ask
     condition = app_config['close_condition']
@@ -211,19 +217,29 @@ def check_conditions(call_ask, put_ask):
 
     return can_close
 
-def close_option_positions(positions, close_qty):
+
+def file_to_delete(file_to_delete):
+
+    try:
+        os.remove(file_to_delete)
+        logger.info(f"File '{file_to_delete}' deleted successfully.")
+    except FileNotFoundError:
+        logger.error(f"Error: File '{file_to_delete}' not found.")
+    except Exception as e:
+        logger.error(f"An error occurred: {e}")
+def close_option_positions(positions, close_qty, close_strike):
     if close_qty == 0:
-        logger.warning(f"close_option_positions(), we dont't close , close_qtyL{close_qty}")
+        logger.info(f"close_option_positions(), we dont't close , close_qtyL{close_qty}")
         return
     for pos in positions:
         contract = pos.contract
         qty = pos.position
 
-        if contract.secType == 'OPT' and qty != 0:
+        if contract.secType == 'OPT' and qty != 0 and contract.strike == close_strike:
             # --- Step 2: Determine opposite action ---
             action = 'SELL' if qty > 0 else 'BUY'
             if close_qty > abs(qty):
-                logger.warning(f"close_option_positions(), trying to close more than open...close_qty:{close_qty}, qty: {qty} ")
+                logger.info(f"close_option_positions(), trying to close more than open...close_qty:{close_qty}, qty: {qty} ")
 
             # --- Step 3: Create market order to close ---
             order = MarketOrder(action, close_qty)
@@ -242,9 +258,10 @@ def close_option_positions(positions, close_qty):
             logger.info(f"close_option_positions(), trade:\n{df.to_markdown()}")
             logger.info(f"Closing {contract.localSymbol}, action: {action}, close_qty: {close_qty}")
 
-    return
+    return True
 
 def check_conditions_and_exit(positions):
+    global user_input_dic
     if not app_config['run_condition_checker']:
         return False
 
@@ -253,9 +270,14 @@ def check_conditions_and_exit(positions):
     call_ask, put_ask = get_asks(call_contract, put_contract)
     can_close = check_conditions(call_ask, put_ask)
     close_quantity = user_input_dic.get('contracts', 0)
+    close_strike = user_input_dic.get('strike', 0)
     logger.info(f"can_close: {can_close}")
     if can_close:
-        close_option_positions(positions, close_quantity)
+        closed = close_option_positions(positions, close_quantity, close_strike=close_strike)
+        if closed:
+            logger.info("deleting user input file ...")
+            file_to_delete(user_input_file_path)
+            user_input_dic = {}
     return
 
 
@@ -345,7 +367,7 @@ def create_option_contract(strike, expiry, right, exchange="CBOE", symbol='SPX',
 
 def send_order():
     global contracts
-    total_quantity = 1
+    total_quantity = 3
     # for
     for contract in contracts:
         order = MarketOrder('BUY', totalQuantity=total_quantity)
@@ -456,9 +478,9 @@ def on_fill(trade, fill):
     global flatten_fill_df
     global flatten_trade_df
 
-    logger.warning(f'in on_fill, trade: {trade}')
-    logger.warning(f'in on_fill, fill: {fill}')
-    logger.warning(f'in on_fill, fill.execution.order_id: {fill.execution.orderId}, fill.contract.symbol: {fill.contract.symbol}')
+    logger.info(f'in on_fill, trade: {trade}')
+    logger.info(f'in on_fill, fill: {fill}')
+    logger.info(f'in on_fill, fill.execution.order_id: {fill.execution.orderId}, fill.contract.symbol: {fill.contract.symbol}')
 
 
     flatten_dic = flatten(fill)

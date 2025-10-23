@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 
 export default function SetParameters({ onSubmit } = {}) {
   const [values, setValues] = useState({
-    base_attm_straddle: '1',
+    base_atm_straddle: '1',
     contracts: '1',
     multiplier: '1',
     strike: '1',
@@ -22,8 +22,8 @@ export default function SetParameters({ onSubmit } = {}) {
 
   function validate() {
     const errs = {}
-  if (!values.base_attm_straddle) errs.base_attm_straddle = 'Required'
-  else if (Number.isNaN(Number(values.base_attm_straddle))) errs.base_attm_straddle = 'Must be a number'
+  if (!values.base_atm_straddle) errs.base_atm_straddle = 'Required'
+  else if (Number.isNaN(Number(values.base_atm_straddle))) errs.base_atm_straddle = 'Must be a number'
 
     if (!values.contracts) errs.contracts = 'Required'
     else if (!Number.isInteger(Number(values.contracts))) errs.contracts = 'Must be an integer'
@@ -42,7 +42,7 @@ export default function SetParameters({ onSubmit } = {}) {
     e.preventDefault()
     if (!validate()) return
     const payload = {
-      base_attm_straddle: Number(values.base_attm_straddle),
+      base_atm_straddle: Number(values.base_atm_straddle),
       contracts: parseInt(values.contracts, 10),
       multiplier: Number(values.multiplier),
       strike: Number(values.strike),
@@ -85,14 +85,28 @@ export default function SetParameters({ onSubmit } = {}) {
         <label style={{ display: 'block', marginBottom: 8 }}>
           Base ATM Straddle Value
           <input
-            name="base_attm_straddle"
-            value={values.base_attm_straddle}
+            name="base_atm_straddle"
+            value={values.base_atm_straddle}
             onChange={handleChange}
             inputMode="decimal"
             style={{ display: 'block', width: '100%', padding: 8, marginTop: 4 }}
           />
-          {errors.base_attm_straddle && (
-            <div style={{ color: 'crimson', fontSize: 13 }}>{errors.base_attm_straddle}</div>
+          {errors.base_atm_straddle && (
+            <div style={{ color: 'crimson', fontSize: 13 }}>{errors.base_atm_straddle}</div>
+          )}
+        </label>
+
+       <label style={{ display: 'block', marginBottom: 8 }}>
+          Multiplier
+          <input
+            name="multiplier"
+            value={values.multiplier}
+            onChange={handleChange}
+            inputMode="decimal"
+            style={{ display: 'block', width: '100%', padding: 8, marginTop: 4 }}
+          />
+          {errors.multiplier && (
+            <div style={{ color: 'crimson', fontSize: 13 }}>{errors.multiplier}</div>
           )}
         </label>
 
@@ -110,19 +124,7 @@ export default function SetParameters({ onSubmit } = {}) {
           )}
         </label>
 
-        <label style={{ display: 'block', marginBottom: 8 }}>
-          Multiplier
-          <input
-            name="multiplier"
-            value={values.multiplier}
-            onChange={handleChange}
-            inputMode="decimal"
-            style={{ display: 'block', width: '100%', padding: 8, marginTop: 4 }}
-          />
-          {errors.multiplier && (
-            <div style={{ color: 'crimson', fontSize: 13 }}>{errors.multiplier}</div>
-          )}
-        </label>
+
 
         <label style={{ display: 'block', marginBottom: 12 }}>
           Strike
@@ -140,12 +142,12 @@ export default function SetParameters({ onSubmit } = {}) {
 
         <div style={{ display: 'flex', gap: 8 }}>
           <button type="submit" style={{ padding: '8px 12px' }}>
-            Save
+            Submit
           </button>
           <button
             type="button"
             onClick={() => {
-              setValues({ base_attm_straddle: '1', contracts: '1', multiplier: '1', strike: '1' })
+              setValues({ base_atm_straddle: '1', contracts: '1', multiplier: '1', strike: '1' })
               setErrors({})
               setSubmitted(null)
               setServerResponse(null)

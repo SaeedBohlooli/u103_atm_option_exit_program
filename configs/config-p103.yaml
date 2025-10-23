@@ -7,6 +7,8 @@ run_should_take_seconds: 15
 side: short
 open_position: false
 
+check_only_in_market_hours: True
+
 run_condition_checker: true
 close_condition: base_atm_straddle * multiplier < call_ask + put_ask
 #close_condition: 1 == 1

@@ -10,3 +10,9 @@ npm create vite@latest atm-exit-ui -- --template react
 
 
 - check ATM price
+
+
+notes from demo
+- make sure ATM strike gets updated in each loop run is 10 secs
+- test if we short two call /put , make sure close will be long
+- have a time check on the condition check
