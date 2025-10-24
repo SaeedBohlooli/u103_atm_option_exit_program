@@ -10,6 +10,7 @@ TBD
 cd bin  
 ./easy-run.bat
 
+./start-web.bat
 
 ## Web address
 web page  
