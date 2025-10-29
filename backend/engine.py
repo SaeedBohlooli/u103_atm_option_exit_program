@@ -21,6 +21,7 @@ import json
 
 yaml = YAML()
 yaml.preserve_quotes = True  # Optional: preserve quotes if any
+yaml.width = 1000 # so will not wrap lines in the yaml file
 
 sys.path.insert(0, f'../')
 for dir_1 in os.listdir(os.path.join('../')):
@@ -263,6 +264,34 @@ def close_option_positions(positions, close_qty, close_strike):
 
     return option_position_close
 
+def cancel_open_orders(symbol,strike,expiry):
+    if not app_config['cancel_open_orders_before_send_order']:
+        return
+    open_orders = ib.reqAllOpenOrders()
+    # Cancel all open orders
+    for order in open_orders:
+        logger.info('----')
+        logger.warning(f"Canceling open order, order_id: {order.order.orderId}, order: {order}")
+        contract = order.contract
+
+        if not isinstance(contract, Option):
+            continue
+        logger.debug(f"it is an option!!!")
+        if symbol != '' and order.contract.symbol != symbol:
+            logger.warning(f"in cancel_all_open_orders, not canceling order.contract.symbol: {order.contract.symbol}")
+            continue
+
+        # if contract.strike == strike and contract.lastTradeDateOrContractMonth == expiry:
+        # we cancel any open SP
+        logger.info(f"canceling ... order.order: {order.order}")
+        trade = ib.cancelOrder(order.order)
+        trade.fillEvent += on_fill
+
+        logger.warning(f"open order canceled, trade: {trade}")
+        ib.sleep(2)
+    return
+
+
 def check_conditions_and_exit(positions):
     global user_input_dic
     if not app_config['run_condition_checker']:
@@ -276,6 +305,7 @@ def check_conditions_and_exit(positions):
     close_strike = user_input_dic.get('strike', 0)
     logger.info(f"can_close: {can_close}")
     if can_close:
+        cancel_open_orders(symbol='SPX',strike=close_strike,expiry=expiry)
         closed = close_option_positions(positions, close_quantity, close_strike=close_strike)
         if closed:
             logger.info("deleting user input file ...")
@@ -540,29 +570,6 @@ def drop_dupplicates(file_path, unique_column=None, keep='last'):
         else: # has fields ...
             df = df.drop_duplicates(subset=[f'{unique_column}'], keep=f'{keep}')
         df.to_csv(file_path, index=False, mode='w')
-    return
-def cancel_open_orders(symbol):
-    if not app_config['cancel_open_orders_on_start']:
-        return
-    open_orders = ib.reqAllOpenOrders()
-    # Cancel all open orders
-    for order in open_orders:
-        logger.info('----')
-        logger.warning(f"Canceling open order, order_id: {order.order.orderId}, order: {order}")
-        contract = order.contract
-
-        if not isinstance(contract, Option):
-            logger.warning(f"it is NOT an option!!!")
-        else:
-            logger.warning(f"it is an option!!!")
-            if order.contract.symbol == symbol:
-                trade = ib.cancelOrder(order.order)
-                logger.warning(f"open order canceled, trade: {trade}")
-                while not trade.isDone():
-                    logger.warning(f"sleep until is done, trade.isDone(): {trade.isDone()}")
-                    ib.sleep(0.5)
-            else:
-                logger.warning(f"in cancel_all_open_orders, not canceling order.contract.symbol: {order.contract.symbol}")
     return
 
 def load_ib_config():

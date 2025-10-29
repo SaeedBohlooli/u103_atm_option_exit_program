@@ -1,10 +1,6 @@
 # u103_atm_option_exit_program
 
 
-## Deploying Release 1.0 
-
-TBD
-
 
 ## Running application 
 cd bin  
@@ -18,6 +14,27 @@ http://localhost:5173/
 
 back end server:  
 http://127.0.0.1:5103  
+
+## Deploying Release 1.1
+
+instructions:  
+-- stop the application  ( close all three dos windows)  
+-- cd c:\code\u103_atm_option_exit_program  
+-- run below command: 
+   git pull 
+-- now the latest code is checked out
+
+
+Fixes:  
+ -- The application cancels SPXW open option orders before closing the open orders.  
+
+
+
+## Deploying Release 1.0
+
+
+
+
 
 ## Preparing environment
 This is one time activity to setup the environment 

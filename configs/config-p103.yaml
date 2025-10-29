@@ -10,3 +10,4 @@ close_condition: (base_atm_straddle * multiplier < call_ask + put_ask)  and 859 
 
 # This is only for test purpose. Don't use it
 open_position: false
+cancel_open_orders_before_send_order: true
