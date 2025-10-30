@@ -4,7 +4,7 @@ logging_level: logging.INFO
 run_should_take_seconds: 15
 
 run_condition_checker: true
-close_condition: (base_atm_straddle * multiplier < call_ask + put_ask)  and 859  < current_hh_mm_ny < 1559
+close_condition: (base_atm_straddle * multiplier < call_ask + put_ask)  and 930  < current_hh_mm_ny < 1559
 #close_condition: 1 == 1
 
 
