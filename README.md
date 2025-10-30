@@ -2,13 +2,13 @@
 
 
 
-## Running application 
+## Run the application 
 cd bin  
 ./easy-run.bat
 
 ./start-web.bat
 
-## Web address
+### Web address
 web page  
 http://localhost:5173/   
 
@@ -19,11 +19,13 @@ http://127.0.0.1:5103
 
 instructions:  
 -- stop the application  ( close all three dos windows)  
--- cd c:\code\u103_atm_option_exit_program  
--- run below command: 
-   git pull 
--- now the latest code is checked out
+-- run below command   
+   **cd c:\code\u103_atm_option_exit_program**  
+-- run below command:   
+   **git pull**   
+-- now the latest code is checked out  
 
+now you can run application based on instruction on 
 
 Fixes:  
  -- The application cancels SPXW open option orders before closing the open orders.  
@@ -32,7 +34,7 @@ Fixes:
 
 ## Deploying Release 1.0
 
-
+it is done in the call ...
 
 
 
