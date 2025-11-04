@@ -236,7 +236,8 @@ def close_option_positions(positions, close_qty, close_strike):
     for pos in positions:
         contract = pos.contract
         qty = pos.position
-
+        logger.info("------------")
+        logger.info(f"pos: {pos}")
         if contract.secType == 'OPT' and qty != 0 and contract.strike == close_strike:
             # --- Step 2: Determine opposite action ---
             action = 'SELL' if qty > 0 else 'BUY'
@@ -264,7 +265,7 @@ def close_option_positions(positions, close_qty, close_strike):
 
     return option_position_close
 
-def cancel_open_orders(symbol,strike,expiry):
+def cancel_open_orders(symbol,strike='',expiry=''):
     if not app_config['cancel_open_orders_before_send_order']:
         return
     open_orders = ib.reqAllOpenOrders()
@@ -292,6 +293,13 @@ def cancel_open_orders(symbol,strike,expiry):
     return
 
 
+def find_strikes_of_open_positions(positions):
+    strikes = []
+    for p in positions:
+        contract = p.contract
+        strikes.append(contract.strike)
+    return strikes
+
 def check_conditions_and_exit(positions):
     global user_input_dic
     if not app_config['run_condition_checker']:
@@ -300,9 +308,15 @@ def check_conditions_and_exit(positions):
     expiry, atm_strike_price = get_closest_expiry_and_atm_strike()
     call_contract, put_contract = create_call_and_contracts(expiry, atm_strike_price)
     call_ask, put_ask = get_asks(call_contract, put_contract)
-    can_close = check_conditions(call_ask, put_ask)
     close_quantity = user_input_dic.get('contracts', 0)
     close_strike = user_input_dic.get('strike', 0)
+    strikes_of_open_trades_list = find_strikes_of_open_positions(positions)
+
+    if not close_strike in strikes_of_open_trades_list:
+        logger.warning(f"strike user entered is not in the open positions. close_strike: {close_strike}, strikes_of_open_trades_list: {strikes_of_open_trades_list}")
+        return False
+
+    can_close = check_conditions(call_ask, put_ask)
     logger.info(f"can_close: {can_close}")
     if can_close:
         cancel_open_orders(symbol='SPX',strike=close_strike,expiry=expiry)
@@ -314,7 +328,7 @@ def check_conditions_and_exit(positions):
     return
 
 
-def find_option_positions_to_monitor():
+def find_option_positions_to_monitor(symbol='SPX'):
     positions = get_all_open_option_positions()
     logger.info(f"positions_to_monitor: \n{tabulate(positions, headers='keys', tablefmt='psql')}")
     ps = []
@@ -693,7 +707,7 @@ if __name__ == "__main__":
             # get_all_open_option_positions()
             user_input_dic = read_user_input_from_shared_folder()
 
-            positions_to_monitor = find_option_positions_to_monitor()
+            positions_to_monitor = find_option_positions_to_monitor(symbol='SPX')
             check_conditions_and_exit(positions_to_monitor)
 
 
