@@ -16,7 +16,7 @@ back end server:
 http://127.0.0.1:5103  
 
 
-## Deploying Release 1.2
+## Deploying Release 1.2   
 
 instructions:  
 -- stop the application  ( close all three dos windows)  
