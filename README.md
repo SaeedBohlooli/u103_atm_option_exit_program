@@ -15,6 +15,24 @@ http://localhost:5173/
 back end server:  
 http://127.0.0.1:5103  
 
+
+## Deploying Release 1.2
+
+instructions:  
+-- stop the application  ( close all three dos windows)  
+-- run below command   
+   **cd c:\code\u103_atm_option_exit_program**  
+-- run below command:   
+   **git pull**   
+-- now the latest code is checked out  
+--  
+
+now you can run application based on instruction on 
+
+Fixes:  
+ -- The app cancels the open order  if the strike matches and cancels right before sending clsoe order.  
+
+
 ## Deploying Release 1.1
 
 instructions:  
