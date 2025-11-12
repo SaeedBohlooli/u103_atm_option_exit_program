@@ -272,12 +272,13 @@ def cancel_open_orders(symbol,strike='',expiry=''):
     # Cancel all open orders
     for order in open_orders:
         logger.info('----')
-        logger.warning(f"Canceling open order, order_id: {order.order.orderId}, order: {order}")
+        logger.warning(f"cancel_open_orders, order_id: {order.order.orderId}, order: {order}")
         contract = order.contract
 
-        if not isinstance(contract, Option):
+        logger.info(f"Contract instance type: {type(contract)}")
+        if not isinstance(contract, Option) and not isinstance(contract, Bag):  # Bag is for combo orders
             continue
-        logger.debug(f"it is an option!!!")
+        logger.debug(f"it is an option or Bag!!!")
         if symbol != '' and order.contract.symbol != symbol:
             logger.warning(f"in cancel_all_open_orders, not canceling order.contract.symbol: {order.contract.symbol}")
             continue
