@@ -16,6 +16,24 @@ back end server:
 http://127.0.0.1:5103  
 
 
+## Deploying Release 1.3   
+
+
+instructions:  
+-- stop the application  ( close all three dos windows)  
+-- go to    
+   **c:\code\u103_atm_option_exit_program**   
+-- click on:   
+   **update-code-from-git.bat**   
+-- now the latest code is checked out  
+ 
+
+now you can run application based on instruction on 
+
+Fixes:  
+ -- The app cancels combo orders as well 
+
+
 ## Deploying Release 1.2   
 
 
