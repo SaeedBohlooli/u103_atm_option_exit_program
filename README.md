@@ -16,6 +16,23 @@ back end server:
 http://127.0.0.1:5103  
 
 
+## Deploying Release 1.4   
+
+
+instructions:  
+-- stop the application  ( close all three dos windows)  
+-- go to    
+   **c:\code\u103_atm_option_exit_program\bin **   
+-- click on:   
+   **update-code-from-git.bat**   
+-- now the latest code is checked out   
+-- Take a screenshot and send to Saeed
+
+now you can run application based on instruction on 
+
+Fixes:  
+ -- Adding retry mechanism if TWS is not returning bid/ask price.   
+
 ## Deploying Release 1.3   
 
 

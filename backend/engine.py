@@ -1,4 +1,5 @@
 import ib_insync.util as ib_util
+import math
 import pprint
 from pandas import ExcelWriter
 from ib_insync import *
@@ -186,10 +187,40 @@ def get_asks(call_contract, put_contract):
     put_ask = put_ticker.ask
 
     logger.info(f"CALL Ask: {call_ask}")
-    logger.info(f"PUT  Ask: {put_ask}")
+    logger.info(f"PUT Ask: {put_ask}")
 
     return call_ask, put_ask
 
+def is_valid_price(price):
+    if price is not None and not pd.isna(price) and not math.isnan(price):
+        return True
+    else:
+        return False
+
+def get_ask(contract, max_retries=4, retry_delay=1):
+
+    for attempt in range(1, max_retries + 1):
+
+        ticker = ib.reqMktData(contract,'', False, False)
+
+        # Wait for data to populate
+        ib.sleep(1)
+
+        # --- Step 7: Extract ask prices ---
+        logger.info(f"ticker: {ticker}")
+        price = ticker.ask
+
+        if price is not None and not (pd.isna(price) or math.isnan(price)):
+            if attempt > 1:
+                logger.warning(f"@@ successful try after attempt: {attempt}, symbol: {symbol}")
+            logger.info(f"{contract.right}, Ask: {price}")
+            return price
+        else:
+            logger.warning(f"@@@ get_ask, {symbol}, price: {price}, try again ... attempt: {attempt}")
+            time.sleep(retry_delay)
+
+    logger.info(f"{contract.right}, Ask: {price}")
+    return price
 def check_conditions(call_ask, put_ask):
     can_close = False
 
@@ -308,7 +339,11 @@ def check_conditions_and_exit(positions):
 
     expiry, atm_strike_price = get_closest_expiry_and_atm_strike()
     call_contract, put_contract = create_call_and_contracts(expiry, atm_strike_price)
-    call_ask, put_ask = get_asks(call_contract, put_contract)
+    call_ask = get_ask(call_contract)
+    put_ask = get_ask(put_contract)
+    if not is_valid_price(call_ask) or not is_valid_price(put_ask):
+        logger.warning(f"@@@ not valid prices, we are not checking conditions. call_ask: {call_ask}, put_ask: {put_ask}")
+
     close_quantity = user_input_dic.get('contracts', 0)
     close_strike = user_input_dic.get('strike', 0)
     strikes_of_open_trades_list = find_strikes_of_open_positions(positions)
@@ -386,7 +421,8 @@ def get_current_price(symbol='SPX'):
     ticker = ib.reqMktData(spx, '', False, False)
 
     ib.sleep(2)  # give IB time to send data
-    logger.info(f"SPX last: {ticker.last},  bid:, {ticker.bid},  ask:{ticker.ask}")
+    # logger.info(f"SPX last: {ticker.last},  bid:, {ticker.bid},  ask:{ticker.ask}")
+    logger.info(f"SPX last: {ticker.last}")
     last_price = ticker.last
     if np.isnan(last_price):
         last_price = -1

@@ -81,7 +81,7 @@ export default function SetParameters({ onSubmit } = {}) {
   return (
     <div style={{ padding: 20, fontFamily: 'system-ui, Arial', maxWidth: 480 }}>
       <h2>Set Parameters</h2>
-      <h3>Ver 1.3</h3>
+      <h3>Ver 1.4</h3>
       <form onSubmit={handleSubmit} noValidate>
         <label style={{ display: 'block', marginBottom: 8 }}>
           Base ATM Straddle Value

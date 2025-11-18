@@ -4,5 +4,5 @@ cd ../trading_utils
 git pull
 git status
 
-timeout 10
+timeout 60
 
