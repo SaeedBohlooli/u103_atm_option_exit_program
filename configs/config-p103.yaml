@@ -1,10 +1,38 @@
-ip: '10.0.0.207'
+ip: '127.0.0.1'
 port: 7497
 client_id: 0
 
+logging_level: logging.INFO
+
+ws_port: 6103
+
+flask:
+  host: 127.0.0.1
+  port: 5103
+
+interval_seconds:
+  engine_loop: 0
+
+dirs:
+  results: "../../portfolios/{portfolio_id}/results"
+  ib: "../../portfolios/{portfolio_id}/ib"
+  reports: "../../portfolios/{portfolio_id}/reports"
+  log_dir: "../../portfolios/{portfolio_id}/logs/{date}"
+  intermediate: "../../portfolios/{portfolio_id}/intermediate"
+  ohlc: "../../portfolios/{portfolio_id}/backtest-ohlc"
+  ohlc_archive: "../../portfolios/{portfolio_id}/ohlc-archive"
+  ohlc_w_indicators: "../../portfolios/{portfolio_id}/ohlc-w-indicators"
+  charts: "../../portfolios/{portfolio_id}/charts"
+
+
+  # -------- DataFrames --------
+
+files:
+  application_state: "{intermediate}/application_state.json"
+
+
 
 symbol: SPXW
-logging_level: logging.INFO
 
 run_should_take_seconds: 5
 
