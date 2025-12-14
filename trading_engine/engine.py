@@ -14,6 +14,7 @@ from trading_core.market_data_store import MarketDataStore
 from trading_utils import user_request_fetcher
 from trading_utils import user_request_router
 from trading_utils import position_helper
+from trading_engine import options_helper
 
 class TradingEngine:
 
@@ -64,19 +65,45 @@ class TradingEngine:
     async def engine_loop(self, ib):
         run_number = 0
         initial_setup = False
+        custom_option_data = {}
         while True:
             try:
                 start_time = time.time()
                 run_number += 1
                 current_hh_mm_ny = self.runtime.now_hhmm()
+                current_date_time_ny = self.runtime.now_Y_M_D_H_S()
                 unique_run_number =  self.runtime.generate_unique_run_number(run_number)
+                self.app_config = self.runtime.reload_config()
+                self.application_statep['current_date_time_ny'] = current_date_time_ny
+                self.application_statep['unique_run_number'] = unique_run_number
 
                 logger.warning(f"==================== unique_run_number: {unique_run_number}, current_hh_mm_ny: {current_hh_mm_ny}")
                 if ib is None:
                     logger.warning("ib is None... so gie a try to reconnect ...")
                     await asyncio.sleep(3)
                     continue
-                self.app_config = self.runtime.reload_config()
+
+                symbol_price = self.application_state.get('symbols', {}).get('SPX', {}).get('current_price', None)
+                logger.info(f"symbol_price: {symbol_price} ")
+                if symbol_price is None or symbol_price == -1 or np.isnan(symbol_price):
+                    logger.info(f"@@ Waiting for valid SPX price...symbol_price: {symbol_price}")
+                    await asyncio.sleep(1)
+                    continue
+                atm_strike = options_helper.get_atm_strike_price(symbol_price)
+                self.application_state.setdefault('symbols', {}).setdefault('SPX', {})['atm_strike'] = atm_strike
+                logger.info(f"@@ atm_strike: {atm_strike} for symbol_price: {symbol_price}")
+                if not initial_setup:
+                    initial_setup = True
+                    # initial tasks can be placed here
+                bid_ask_for_c_and_p_map = await options_helper.get_spx_option_chain_bid_ask(ib, atm_strike, self.app_config, self.application_state)
+                options_helper.calualte_misc_metrics(custom_option_data, self.app_config, self.application_state)
+                custom_option_data_map = options_helper.convert_to_map_ready_for_stream(custom_option_data, self.app_config, self.application_state)
+
+
+
+                self.application_state.setdefault('symbols', {}).setdefault('SPX', {})['option_chain'] = bid_ask_for_c_and_p_map
+                custom_option_data.append(bid_ask_for_c_and_p_map)
+
 
                 end_time = time.time()
                 run_spend_time = round(end_time - start_time, 2)
@@ -88,6 +115,29 @@ class TradingEngine:
                 logger.error(f"@@@ error: {traceback.format_exc()}" )
                 await asyncio.sleep(self.app_config['interval_seconds']['engine_loop'])
 
+    async def spx_price_stream_loop(self, ib):
+        global spx_current_price
+
+        spx_current_price = await ib_pricing_async.subscribe_symbol_once(ib, "SPX", secType="IND", exchange="CBOE")
+
+        while True:
+            try:
+                spx_current_price = ib_pricing_async.get_latest_price('SPX')
+                self.application_state.setdefault('symbols', {}).setdefault('SPX', {})['current_price'] = spx_current_price
+
+                packet = {
+                    "type": "tick",
+                    "symbol": "SPX",
+                    "price": spx_current_price,
+                    "timestamp": time.time(),
+                }
+                logger.info("[spx_price_stream_loop] streaming ....")
+                await self.ws.broadcast(packet)
+                logger.info("[spx_price_stream_loop]  streamed.")
+                await asyncio.sleep(0.1)
+                logger.info(f"spx_price_stream_loop in the streem loop  spx_current_price: {spx_current_price} ")
+            except Exception as e:
+                logger.warning(f"Unexpected error in spx_price_stream_loop: {e}")
 
     async def test_loop(self, ib):
         while True:
