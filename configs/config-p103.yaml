@@ -11,7 +11,7 @@ flask:
   port: 5103
 
 interval_seconds:
-  engine_loop: 0
+  engine_loop: 15
 
 dirs:
   results: "../../portfolios/{portfolio_id}/results"

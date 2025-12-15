@@ -10,13 +10,16 @@ from trading_core.streamers.config_streamer import ConfigStreamer
 from trading_core.ib_connector import IBConnector
 from trading_core.file_manager import FileManager
 from trading_core.market_data_store import MarketDataStore
+from trading_core import user_request_loop
 
 from trading_utils import user_request_fetcher
 from trading_utils import user_request_router
 from trading_utils import position_helper
-from trading_engine import options_helper
-from trading_core import user_request_loop
+from trading_utils import ib_pricing_async
+from trading_utils import date_utils
 
+from trading_engine import options_helper
+from trading_engine import pricing_helper
 
 class TradingEngine:
 
@@ -84,28 +87,42 @@ class TradingEngine:
                     logger.warning("ib is None... so gie a try to reconnect ...")
                     await asyncio.sleep(3)
                     continue
+                symbol = 'SPX'
+                option_class = 'SPXW'
 
-                symbol_price = self.application_state.get('symbols', {}).get('SPX', {}).get('current_price', None)
+                symbol_price = self.application_state.get('symbols', {}).get(symbol, {}).get('current_price', None)
                 logger.info(f"symbol_price: {symbol_price} ")
                 if symbol_price is None or symbol_price == -1 or np.isnan(symbol_price):
                     logger.info(f"@@ Waiting for valid SPX price...symbol_price: {symbol_price}")
                     await asyncio.sleep(1)
                     continue
-                atm_strike = options_helper.get_atm_strike_price(symbol_price)
-                self.application_state.setdefault('symbols', {}).setdefault('SPX', {})['atm_strike'] = atm_strike
+
+                atm_strike = options_helper.get_atm_strike_price(self.application_state, symbol, symbol_price)
+                expiry = 20251215   # TODO make it dynamic later
+                call_contract = await options_helper.create_spx_option_contract(ib, self.app_config, self.application_state, option_class, expiry, atm_strike, 'C')
+                put_contract = await options_helper.create_spx_option_contract(ib, self.app_config, self.application_state, option_class, expiry, atm_strike, 'P')
+                logger.info(f"@@ call_contract: {call_contract} ")
+                logger.info(f"@@ put_contract: {put_contract} ")
                 logger.info(f"@@ atm_strike: {atm_strike} for symbol_price: {symbol_price}")
                 if not initial_setup:
                     initial_setup = True
                     # initial tasks can be placed here
-                bid_ask_for_c_and_p_map = await options_helper.get_spx_option_chain_bid_ask(ib, atm_strike, self.app_config, self.application_state)
-                options_helper.calualte_misc_metrics(custom_option_data, self.app_config, self.application_state)
-                custom_option_data_map = options_helper.convert_to_map_ready_for_stream(custom_option_data, self.app_config, self.application_state)
+                quotes_df = await pricing_helper.get_bid_ask_for_contracts(ib, self.app_config, self.application_state, [call_contract, put_contract])
+
+                # options_helper.calualte_misc_metrics(custom_option_data, self.app_config, self.application_state)
+                # custom_option_data_map = options_helper.convert_to_map_ready_for_stream(custom_option_data, self.app_config, self.application_state)
+                #
+
+
+                # self.application_state.setdefault('symbols', {}).setdefault('SPX', {})['option_chain'] = bid_ask_for_c_and_p_map
+                # custom_option_data.append(bid_ask_for_c_and_p_map)
 
 
 
-                self.application_state.setdefault('symbols', {}).setdefault('SPX', {})['option_chain'] = bid_ask_for_c_and_p_map
-                custom_option_data.append(bid_ask_for_c_and_p_map)
 
+                self.application_state['global_state.symbol_to_conid'] = global_state.symbol_to_conid
+                self.application_state['global_state.conid_to_symbol'] = global_state.conid_to_symbol
+                self.application_state['global_state.option_contract_cache_len'] = len(global_state.option_contract_cache)
 
                 end_time = time.time()
                 run_spend_time = round(end_time - start_time, 2)
@@ -192,6 +209,7 @@ class TradingEngine:
             ws_server,
             state_streamer.run(),
             config_streamer.run(),
+            self.spx_price_stream_loop(ib),
             self.engine_loop(ib),
             user_request_loop.fetch_user_request_loop(self.app_config, self.application_state),
             self.boot.data_saver_manager.run(ib),
