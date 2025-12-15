@@ -15,6 +15,8 @@ from trading_utils import user_request_fetcher
 from trading_utils import user_request_router
 from trading_utils import position_helper
 from trading_engine import options_helper
+from trading_core import user_request_loop
+
 
 class TradingEngine:
 
@@ -74,8 +76,8 @@ class TradingEngine:
                 current_date_time_ny = self.runtime.now_Y_M_D_H_S()
                 unique_run_number =  self.runtime.generate_unique_run_number(run_number)
                 self.app_config = self.runtime.reload_config()
-                self.application_statep['current_date_time_ny'] = current_date_time_ny
-                self.application_statep['unique_run_number'] = unique_run_number
+                self.application_state['current_date_time_ny'] = current_date_time_ny
+                self.application_state['unique_run_number'] = unique_run_number
 
                 logger.warning(f"==================== unique_run_number: {unique_run_number}, current_hh_mm_ny: {current_hh_mm_ny}")
                 if ib is None:
@@ -191,7 +193,6 @@ class TradingEngine:
             state_streamer.run(),
             config_streamer.run(),
             self.engine_loop(ib),
-            self.test_loop(ib),
-            self.request_router(),
-            self.data_saver_loop(ib)
+            user_request_loop.fetch_user_request_loop(self.app_config, self.application_state),
+            self.boot.data_saver_manager.run(ib),
         )

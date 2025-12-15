@@ -1,0 +1,31 @@
+control_panel:
+  projectName: 103 Control Panel P
+  browserTitle: 103 Control Panel P
+# Server ports
+  ports:
+    vite: 7103
+    websocket: 6103
+    api: 5103
+
+  # WebSocket configuration
+  websocket:
+    url: ws://127.0.0.1:6103
+    reconnect:
+      initialDelay: 1000
+      maxDelay: 30000
+      backoffMultiplier: 2
+
+  # API configuration
+  api:
+    baseUrl: http://127.0.0.1:5103
+    endpoints:
+      sendRequest: /api/send-request
+
+  # Message types
+  messageTypes:
+    applicationState: application_state
+    appConfig: app_config
+  # Footer configuration
+  footer:
+    text: "Trading Control Panel Dashboard @ ZoiTek.com   2014 - 2025"
+    link: "https://zoitek.com"
