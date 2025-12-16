@@ -8,5 +8,7 @@ async def get_bid_ask_for_contracts(ib, app_config, application_state, contracts
     await ib_pricing_async.subscribe_contracts_to_market_data(ib, contracts)
     quotes_df = ib_pricing_async.get_all_quotes_as_df()
     logger.info(f"get_bid_ask_for_contracts, quotes_df: \n{quotes_df.to_markdown()} ")
+    quotes_df = ib_pricing_async.fix_bid_ask_with_fallback(df=quotes_df)
+    logger.info(f"get_bid_ask_for_contracts, after fix, quotes_df: \n{quotes_df.to_markdown()} ")
     return quotes_df
 

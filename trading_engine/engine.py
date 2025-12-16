@@ -20,6 +20,7 @@ from trading_utils import date_utils
 
 from trading_engine import options_helper
 from trading_engine import pricing_helper
+from trading_engine import application_state_helper
 
 class TradingEngine:
 
@@ -36,31 +37,7 @@ class TradingEngine:
         self._last_custom_save_times: dict[str, float] = {}
 
 
-    def _should_run_save(self, key: str, min_interval_sec: int, force: bool) -> bool:
-        if force:
-            self._last_custom_save_times[key] = time.time()
-            return True
 
-        now = time.time()
-        last = self._last_custom_save_times.get(key)
-        if last is None or (now - last) >= min_interval_sec:
-            self._last_custom_save_times[key] = now
-            return True
-        return False
-
-    async def save_all_all(self, ib, force=False):
-
-        # self.runtime.save_application_state()
-        FileManager.save_named_json(self.application_state, "application_state")
-
-        ib_dir = self.boot.dirs.ib_dir
-        ib_interval = self.app_config.get('intervals',{}).get('ib_posttrade', 300)
-        if self._should_run_save("ib_posttrade", ib_interval, force=force):
-            # one place where ib_posttrade is called
-            logger.info("[save_all_dataframes] Saving IB dataframes ...")
-            await ib_posttrade.save_ib_dfs_async(ib_dir, ib)
-
-        self.logger.info(f"[save_all_dataframes] Completed save (force={force})")
 
 
     # --------------------------
@@ -70,7 +47,9 @@ class TradingEngine:
     async def engine_loop(self, ib):
         run_number = 0
         initial_setup = False
-        custom_option_data = {}
+        application_state_helper.init_application_state(self.application_state)
+
+        atm_straddle_tracker_df = pd.DataFrame()
         while True:
             try:
                 start_time = time.time()
@@ -80,6 +59,7 @@ class TradingEngine:
                 unique_run_number =  self.runtime.generate_unique_run_number(run_number)
                 self.app_config = self.runtime.reload_config()
                 self.application_state['current_date_time_ny'] = current_date_time_ny
+                self.application_state['current_hh_mm_ny'] = current_hh_mm_ny
                 self.application_state['unique_run_number'] = unique_run_number
 
                 logger.warning(f"==================== unique_run_number: {unique_run_number}, current_hh_mm_ny: {current_hh_mm_ny}")
@@ -108,9 +88,14 @@ class TradingEngine:
                     initial_setup = True
                     # initial tasks can be placed here
                 quotes_df = await pricing_helper.get_bid_ask_for_contracts(ib, self.app_config, self.application_state, [call_contract, put_contract])
-
-                # options_helper.calualte_misc_metrics(custom_option_data, self.app_config, self.application_state)
-                # custom_option_data_map = options_helper.convert_to_map_ready_for_stream(custom_option_data, self.app_config, self.application_state)
+                atm_straddle_tracker_df = options_helper.calualte_misc_metrics(self.app_config, self.application_state, atm_strike, quotes_df, atm_straddle_tracker_df)
+                logger.info(f"@@ atm_straddle_tracker_df:  \n{atm_straddle_tracker_df.to_markdown()}")
+                atm_straddle_tracker_obj_wrapper = options_helper.create_straddle_tracker_wrapper_object(self.app_config, self.application_state, atm_strike, atm_straddle_tracker_df)
+                self.application_state['atm_straddle_tracker_obj_wrapper'] = atm_straddle_tracker_obj_wrapper
+                from pprint import pprint
+                logger.info(f"@@ atm_straddle_tracker_obj_wrapper:  \n{pprint(atm_straddle_tracker_obj_wrapper)}")
+                # elf.application_state['atm_straddle_tracker_obj_wrapper'] = {'x': 1}
+                #custom_option_data_map = options_helper.convert_to_map_ready_for_stream(custom_option_data, self.app_config, self.application
                 #
 
 
@@ -158,41 +143,7 @@ class TradingEngine:
             except Exception as e:
                 logger.warning(f"Unexpected error in spx_price_stream_loop: {e}")
 
-    async def test_loop(self, ib):
-        while True:
-            try:
-                logger.info("test_loop...")
-                await asyncio.sleep(10)
-            except Exception as e:
-                logger.warning(f"Unexpected error: {e}")
-                logger.error(f"@@@ error: {traceback.format_exc()}" )
 
-    async def request_router(self):
-        while True:
-            try:
-                user_request_fetcher.fetch_user_request(self.app_config, self.application_state)
-                logger.info("request_router...")
-                await asyncio.sleep(10)
-            except Exception as e:
-                logger.warning(f"Unexpected error: {e}")
-                logger.error(f"@@@ error: {traceback.format_exc()}" )
-
-    async def data_saver_loop(self, ib):
-        while True:
-            try:
-
-                if self.application_state.get('is_busy_time', False):
-                    self.logger.info("[data_saver] Busy hour -> skip save")
-                    await asyncio.sleep(30)
-                    continue
-
-                await self.save_all_all(ib, force=False)
-
-                await asyncio.sleep(60)
-
-            except Exception as e:
-                self.logger.error(f"@@@ [data_saver] Error: {e}")
-                await asyncio.sleep(10)
 
     async def run(self):
         logger.info("Starting Trading Engine")

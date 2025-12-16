@@ -1,7 +1,11 @@
 
 import logging
+
+import pandas as pd
+
 logger = logging.getLogger(__name__)
-from trading_utils import ib_contract
+from trading_utils import ib_contract, ib_pricing_async
+
 
 def get_atm_strike_price(application_state, symbol, symbol_price):
     atm = round(symbol_price / 5) * 5
@@ -16,30 +20,37 @@ async def  create_spx_option_contract(ib, app_config, application_state, symbol,
     return qc
 
 
+def calualte_misc_metrics(app_config, application_state, atm_strike, quotes_df, atm_straddle_tracker_df):
+    symbol = application_state.get('user_input',{}).get('option_class', 'SPX')
 
-# def get_closest_expiry_and_atm_strike():# --- Step 1: Define SPX underlying ---
-#     underlying = Index('SPX', 'CBOE')  # SPX is the underlying for SPXW
-#     ib.qualifyContracts(underlying)
-#
-#     # --- Step 2: Request option chain info ---
-#     chains = ib.reqSecDefOptParams('SPX', '', 'IND', underlying.conId)
-#
-#     # SPXW is a weekly trading class for SPX index options
-#     chain = next(c for c in chains if c.tradingClass == 'SPXW')
-#
-#     # --- Step 3: Get current SPX price ---
-#     ticker = ib.reqMktData(underlying)
-#     ib.sleep(2)
-#     underlying_price = ticker.last or ticker.close
-#     logger.info(f"SPX current price: {underlying_price}")
-#
-#     # --- Step 4: Choose expiry ---
-#     expiry = sorted(chain.expirations)[0]   # nearest expiry
-#     logger.info(f"Nearest expiry: {expiry}")
-#
-#     # --- Step 5: Find ATM strike ---
-#     strikes = sorted(chain.strikes)
-#     atm_strike = min(strikes, key=lambda s: abs(s - underlying_price))
-#
-#     logger.info(f"ATM Strike: {atm_strike}")
-#     return expiry, atm_strike
+    call_tick_info_map = ib_pricing_async.find_bid_ask(quotes_df, symbol, atm_strike, right='C')
+    put_tick_info_map = ib_pricing_async.find_bid_ask(quotes_df, symbol, atm_strike, right='P')
+     # = application_state.setdefault('atm_straddle_tracker', {})
+    row = {'timestamp': call_tick_info_map.get('timestamp'),  'symbol': symbol, 'symbol_price': atm_strike, 'atm_strike': atm_strike,
+           'call_bid': call_tick_info_map.get('bid'), 'call_ask': call_tick_info_map.get('ask'),
+          'put_bid': put_tick_info_map.get('bid'), 'put_ask': put_tick_info_map.get('ask'),
+           'sum_put_call_ask': (call_tick_info_map.get('ask', 0) + put_tick_info_map.get('ask', 0)),
+           'difference': 0, 'x_diffs_total': 0, 'call_spread': 0, 'put_spread': 0}
+
+    atm_straddle_tracker_df = pd.concat([atm_straddle_tracker_df, pd.DataFrame([row])], ignore_index=True)
+
+    return atm_straddle_tracker_df
+
+def create_straddle_tracker_wrapper_object(app_config, application_state, atm_strike, atm_straddle_tracker_df):
+    # atm_straddle_tracker_df = atm_straddle_tracker_df.
+    straddle_tracker = {
+        'symbol': application_state.get('user_input', {}).get('option_class', 'SPX'),
+        # 'atm_strike': atm_strike,
+        # 'day_highest_atm_strike': atm_straddle_tracker_df['atm_strike'].max(),
+        # 'last_atm_strike': atm_straddle_tracker_df['atm_strike'].iloc[-1] if not atm_straddle_tracker_df.empty else None,
+        'diff_high_base': 0,
+        'diff_base_last': 0,
+        'call_spread_max':0,
+        'put_spread_max':0,
+        'call_spread_min':0,
+        'put_spread_min':0,
+        'call_spread_latest':0,
+        'put_spread_latest':0,
+        'records': atm_straddle_tracker_df.to_dict('records')
+    }
+    return straddle_tracker
