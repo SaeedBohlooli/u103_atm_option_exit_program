@@ -14,7 +14,7 @@ from trading_core import user_request_loop
 
 from trading_utils import user_request_fetcher
 from trading_utils import user_request_router
-from trading_utils import position_helper
+from trading_utils import position_router
 from trading_utils import ib_pricing_async
 from trading_utils import date_utils
 
@@ -78,7 +78,7 @@ class TradingEngine:
                     continue
 
                 atm_strike = options_helper.get_atm_strike_price(self.application_state, symbol, symbol_price)
-                expiry = 20251215   # TODO make it dynamic later
+                expiry = 20251216   # TODO make it dynamic later
                 call_contract = await options_helper.create_spx_option_contract(ib, self.app_config, self.application_state, option_class, expiry, atm_strike, 'C')
                 put_contract = await options_helper.create_spx_option_contract(ib, self.app_config, self.application_state, option_class, expiry, atm_strike, 'P')
                 logger.info(f"@@ call_contract: {call_contract} ")
@@ -91,7 +91,9 @@ class TradingEngine:
                 atm_straddle_tracker_df = options_helper.calualte_misc_metrics(self.app_config, self.application_state, atm_strike, quotes_df, atm_straddle_tracker_df)
                 logger.info(f"@@ atm_straddle_tracker_df:  \n{atm_straddle_tracker_df.to_markdown()}")
                 atm_straddle_tracker_obj_wrapper = options_helper.create_straddle_tracker_wrapper_object(self.app_config, self.application_state, atm_strike, atm_straddle_tracker_df)
-                self.application_state['atm_straddle_tracker_obj_wrapper'] = atm_straddle_tracker_obj_wrapper
+                if self.app_config.get('overwrite_atm_straddle_tracker_obj_wrapper', True):
+                    self.application_state['atm_straddle_tracker_obj_wrapper'] = atm_straddle_tracker_obj_wrapper
+
                 from pprint import pprint
                 logger.info(f"@@ atm_straddle_tracker_obj_wrapper:  \n{pprint(atm_straddle_tracker_obj_wrapper)}")
                 # elf.application_state['atm_straddle_tracker_obj_wrapper'] = {'x': 1}
@@ -151,7 +153,7 @@ class TradingEngine:
 
         ws_server = await self.ws.start()
 
-        state_streamer = StateStreamer(self.application_state, self.ws, interval=5)
+        state_streamer = StateStreamer(self.app_config, self.application_state, self.ws, interval=5)
         config_streamer = ConfigStreamer(self.app_config, self.ws, interval=12)
 
         self.logger.info("WebSocket server is starting...")

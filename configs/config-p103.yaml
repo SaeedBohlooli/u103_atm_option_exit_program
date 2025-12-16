@@ -11,7 +11,9 @@ flask:
   port: 5103
 
 interval_seconds:
-  engine_loop: 15
+  engine_loop: 2
+  state_streamer: 15
+  config_streamer: 60
 
 dirs:
   results: "../../portfolios/{portfolio_id}/results"

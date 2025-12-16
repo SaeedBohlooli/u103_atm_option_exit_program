@@ -34,15 +34,20 @@ def calualte_misc_metrics(app_config, application_state, atm_strike, quotes_df, 
 
     atm_straddle_tracker_df = pd.concat([atm_straddle_tracker_df, pd.DataFrame([row])], ignore_index=True)
 
+    cols = ["call_bid", "call_ask", "put_bid", "put_ask"]
+    logger.info(f"Dropping rows with all NaNs in columns {cols} len(atm_straddle_tracker_df) before: {len(atm_straddle_tracker_df)}")
+    atm_straddle_tracker_df = atm_straddle_tracker_df.dropna(subset=cols, how="all")
+    logger.info(f"Dropping rows with all NaNs in columns {cols} len(atm_straddle_tracker_df) after: {len(atm_straddle_tracker_df)}")
+
     return atm_straddle_tracker_df
 
 def create_straddle_tracker_wrapper_object(app_config, application_state, atm_strike, atm_straddle_tracker_df):
     # atm_straddle_tracker_df = atm_straddle_tracker_df.
     straddle_tracker = {
         'symbol': application_state.get('user_input', {}).get('option_class', 'SPX'),
-        # 'atm_strike': atm_strike,
-        # 'day_highest_atm_strike': atm_straddle_tracker_df['atm_strike'].max(),
-        # 'last_atm_strike': atm_straddle_tracker_df['atm_strike'].iloc[-1] if not atm_straddle_tracker_df.empty else None,
+        'atm_strike': atm_strike,
+        'day_highest_atm_strike':  int(v) if pd.notna(v := atm_straddle_tracker_df['atm_strike'].max()) else 0,
+        'last_atm_strike':         int(v) if len(atm_straddle_tracker_df) > 0 and pd.notna(v := atm_straddle_tracker_df['atm_strike'].iloc[-1]) else 0,
         'diff_high_base': 0,
         'diff_base_last': 0,
         'call_spread_max':0,
