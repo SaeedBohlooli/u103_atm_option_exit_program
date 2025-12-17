@@ -30,3 +30,4 @@ ib_insync
 ib_async
 ruamel.yaml
 flask
+flask-cors
