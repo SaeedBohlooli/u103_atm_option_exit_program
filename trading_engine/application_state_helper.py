@@ -7,5 +7,6 @@ def init_application_state(application_state):
     application_state['user_input']['exchange'] = 'CBOE'
     application_state['user_input']['trading_class'] = 'SPXW'
     application_state['user_input']['trading_class'] = 'SPXW'
+    application_state.get('user_input', {}).setdefault('rolling_window_size_for_diff', 4)
     application_state['subscribed_con_ids'] = []  # need to get new quotes ...
     application_state.setdefault('symbols', {}).setdefault('SPX', {'current_price': None})

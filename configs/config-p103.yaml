@@ -6,7 +6,7 @@ logging_level: logging.INFO
 
 ws_port: 6103
 
-flask:
+api_service:
   host: 127.0.0.1
   port: 5103
 
@@ -16,6 +16,7 @@ interval_seconds:
   config_streamer: 60
 
 dirs:
+  default: "../../portfolios/{portfolio_id}/default"
   results: "../../portfolios/{portfolio_id}/results"
   ib: "../../portfolios/{portfolio_id}/ib"
   reports: "../../portfolios/{portfolio_id}/reports"
@@ -31,6 +32,18 @@ dirs:
 
 files:
   application_state: "{intermediate}/application_state.json"
+
+
+
+order_setup:
+  conditions:
+    cond_1:
+      - last_x_diff_total >
+      - current_price < user_input_spx_price - user_input_spx_price_trigger
+    cond_2:
+      - day_highest_atm_strike > user_input_base_atm_price_1
+      - current_price < user_input_spx_price
+  master_condition: cond_1 or cond_2
 
 
 

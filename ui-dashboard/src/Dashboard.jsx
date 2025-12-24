@@ -1,3 +1,4 @@
+import StatusIndicator from './StatusIndicator';
 import React, { useState, useEffect } from 'react'
 import { config } from './config'
 
@@ -76,34 +77,12 @@ function Dashboard({ onLogout, onNavigateToOrderSetup }) {
       }}>
         <h1 style={{ margin: 0, fontSize: '24px' }}>Trading Dashboard</h1>
         <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <div style={{
-              width: '12px',
-              height: '12px',
-              borderRadius: '50%',
-              backgroundColor: flaskApiStatus === 'Connected' ? '#22c55e' : flaskApiStatus === 'Error' ? '#fbbf24' : '#ef4444'
-            }}></div>
-            <span style={{ fontSize: '14px' }}>
-              API: <span style={{ 
-                color: flaskApiStatus === 'Connected' ? '#86efac' : '#fca5a5',
-                fontWeight: '500'
-              }}>{flaskApiStatus}</span>
-            </span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <div style={{
-              width: '12px',
-              height: '12px',
-              borderRadius: '50%',
-              backgroundColor: wsStatus === 'Connected' ? '#86efac' : wsStatus === 'Error' ? '#fbbf24' : '#ef4444'
-            }}></div>
-            <span style={{ fontSize: '14px' }}>
-              WS: <span style={{ 
-                color: wsStatus === 'Connected' ? '#86efac' : '#fca5a5',
-                fontWeight: '500'
-              }}>{wsStatus}</span>
-            </span>
-          </div>
+          <StatusIndicator
+            wsStatus={wsStatus}
+            isReceivingData={false}
+            flaskApiStatus={flaskApiStatus}
+            fieldContainerStyle={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+          />
           <button
             onClick={onLogout}
             style={{

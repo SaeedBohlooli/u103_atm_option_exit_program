@@ -15,12 +15,15 @@ from trading_core import user_request_loop
 from trading_utils import user_request_fetcher
 from trading_utils import user_request_router
 from trading_utils import position_router
+from trading_utils import order_router
+
 from trading_utils import ib_pricing_async
 from trading_utils import date_utils
 
 from trading_engine import options_helper
 from trading_engine import pricing_helper
 from trading_engine import application_state_helper
+from trading_engine import user_request_helper
 
 class TradingEngine:
 
@@ -32,12 +35,6 @@ class TradingEngine:
         self.ws = WSServer(host="0.0.0.0", port=self.app_config.get('ws_port', 6106))
         self.runtime = boot.runtime
         self.market_data = MarketDataStore()
-
-        # generic per-target throttling
-        self._last_custom_save_times: dict[str, float] = {}
-
-
-
 
 
     # --------------------------
@@ -78,7 +75,9 @@ class TradingEngine:
                     continue
 
                 atm_strike = options_helper.get_atm_strike_price(self.application_state, symbol, symbol_price)
-                expiry = 20251216   # TODO make it dynamic later
+                expiry = self.runtime.now_YYYYMMDD()
+                self.application_state.setdefault('user_input', {})['expiry'] = expiry
+
                 call_contract = await options_helper.create_spx_option_contract(ib, self.app_config, self.application_state, option_class, expiry, atm_strike, 'C')
                 put_contract = await options_helper.create_spx_option_contract(ib, self.app_config, self.application_state, option_class, expiry, atm_strike, 'P')
                 logger.info(f"@@ call_contract: {call_contract} ")
@@ -94,8 +93,13 @@ class TradingEngine:
                 if self.app_config.get('overwrite_atm_straddle_tracker_obj_wrapper', True):
                     self.application_state['atm_straddle_tracker_obj_wrapper'] = atm_straddle_tracker_obj_wrapper
 
+                position_router.update_application_state_for_ib_positions(ib, self.application_state)
+                await order_router.update_application_state_for_ib_open_orders(ib,self.app_config, self.application_state)
+
                 from pprint import pprint
                 logger.info(f"@@ atm_straddle_tracker_obj_wrapper:  \n{pprint(atm_straddle_tracker_obj_wrapper)}")
+
+
                 # elf.application_state['atm_straddle_tracker_obj_wrapper'] = {'x': 1}
                 #custom_option_data_map = options_helper.convert_to_map_ready_for_stream(custom_option_data, self.app_config, self.application
                 #
@@ -121,14 +125,11 @@ class TradingEngine:
                 logger.error(f"@@@ error: {traceback.format_exc()}" )
                 await asyncio.sleep(self.app_config['interval_seconds']['engine_loop'])
 
-    async def spx_price_stream_loop(self, ib):
-        global spx_current_price
-
-        spx_current_price = await ib_pricing_async.subscribe_symbol_once(ib, "SPX", secType="IND", exchange="CBOE")
+    async def spx_price_stream_loop(self, ib, interval_sec=2):
 
         while True:
             try:
-                spx_current_price = ib_pricing_async.get_latest_price('SPX')
+                spx_current_price = await ib_pricing_async.get_or_subscribe_symbol_price(ib, "SPX")
                 self.application_state.setdefault('symbols', {}).setdefault('SPX', {})['current_price'] = spx_current_price
 
                 packet = {
@@ -140,10 +141,11 @@ class TradingEngine:
                 logger.info("[spx_price_stream_loop] streaming ....")
                 await self.ws.broadcast(packet)
                 logger.info("[spx_price_stream_loop]  streamed.")
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(interval_sec)
                 logger.info(f"spx_price_stream_loop in the streem loop  spx_current_price: {spx_current_price} ")
             except Exception as e:
                 logger.warning(f"Unexpected error in spx_price_stream_loop: {e}")
+                await asyncio.sleep(interval_sec)
 
 
 
@@ -154,7 +156,7 @@ class TradingEngine:
         ws_server = await self.ws.start()
 
         state_streamer = StateStreamer(self.app_config, self.application_state, self.ws, interval=5)
-        config_streamer = ConfigStreamer(self.app_config, self.ws, interval=12)
+        config_streamer = ConfigStreamer(self.app_config, self.application_state, self.ws, interval=12)
 
         self.logger.info("WebSocket server is starting...")
 
@@ -162,8 +164,10 @@ class TradingEngine:
             ws_server,
             state_streamer.run(),
             config_streamer.run(),
-            self.spx_price_stream_loop(ib),
+            self.spx_price_stream_loop(ib, interval_sec=5),
             self.engine_loop(ib),
-            user_request_loop.fetch_user_request_loop(self.app_config, self.application_state),
-            self.boot.data_saver_manager.run(ib),
+            user_request_loop.fetch_user_request_loop(self.app_config, self.application_state,interval_sec=5),
+            user_request_loop.process_common_user_request_loop(ib, self.app_config, self.application_state,interval_sec=5),
+            user_request_helper.process_app_user_request_loop(ib, self.app_config, self.application_state,interval_sec=5),
+            self.boot.data_saver_manager.run(ib, interval_sec=60),
         )

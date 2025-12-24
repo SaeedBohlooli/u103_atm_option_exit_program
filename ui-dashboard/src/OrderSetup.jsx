@@ -1,3 +1,4 @@
+import StatusIndicator from './StatusIndicator';
 import React, { useEffect, useState, useMemo, useCallback } from 'react'
 import { config } from './config'
 
@@ -27,11 +28,40 @@ const fieldContainerStyle = {
 }
 
 function OrderSetup({ onBack }) {
+  // Reset handler to clear all form fields
+  const handleReset = useCallback(() => {
+    setFrequency('');
+    setRollingNumber('');
+    setAtmTrigger('');
+    setSpxTrigger('');
+    setBaseAtmTrigger('');
+    setEntrySpx1('');
+    setEntrySpx2('');
+    setBaseAtm1('');
+    setBaseAtm2('');
+    setContracts1('');
+    setContracts2('');
+    setOptionType1('');
+    setOptionType2('');
+    setCloseShortStrike1('');
+    setCloseShortStrike2('');
+    setCloseLongStrike1('');
+    setCloseLongStrike2('');
+    setLimtOrderTypeLimit1('');
+    setLimtOrderTypeLimit2('');
+    setCloseShortStrikeCombo1('');
+    setCloseShortStrikeCombo2('');
+    setCloseLongStrikeCombo1('');
+    setCloseLongStrikeCombo2('');
+    setCloseLongStrikeSingleLeg1('');
+    setCloseLongStrikeSingleLeg2('');
+  }, []);
   const [records, setRecords] = useState([])
   const [wsStatus, setWsStatus] = useState('Disconnected')
   const [isReceivingData, setIsReceivingData] = useState(false)
   const [flaskApiStatus, setFlaskApiStatus] = useState('Checking...')
   const [spxPrice, setSpxPrice] = useState(null)
+  const [prevSpxPrice, setPrevSpxPrice] = useState(null)
   const [dayHighestAtmStrike, setDayHighestAtmStrike] = useState(null)
   const [lastAtmStrike, setLastAtmStrike] = useState(null)
   const [diffHighBase, setDiffHighBase] = useState(null)
@@ -77,31 +107,39 @@ function OrderSetup({ onBack }) {
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault()
     const formData = {
+      request_type: 'SETUP_ORDER',
+      status: 'WEB_SUBMITTED',
       frequency,
       rolling_number: rollingNumber,
       atm_trigger: atmTrigger,
-      spx_trigger: spxTrigger,
+      spx_price_trigger: spxTrigger,
       base_atm_trigger: baseAtmTrigger,
-      entry_spx_1: entrySpx1,
-      entry_spx_2: entrySpx2,
-      base_atm_1: baseAtm1,
-      base_atm_2: baseAtm2,
-      contracts_1: contracts1,
-      contracts_2: contracts2,
-      option_type_1: optionType1,
-      option_type_2: optionType2,
-      close_short_strike_1: closeShortStrike1,
-      close_short_strike_2: closeShortStrike2,
-      close_long_strike_1: closeLongStrike1,
-      close_long_strike_2: closeLongStrike2,
-      limt_order_type_limit_1: limtOrderTypeLimit1,
-      limt_order_type_limit_2: limtOrderTypeLimit2,
-      close_short_strike_combo_1: closeShortStrikeCombo1,
-      close_short_strike_combo_2: closeShortStrikeCombo2,
-      close_long_strike_combo_1: closeLongStrikeCombo1,
-      close_long_strike_combo_2: closeLongStrikeCombo2,
-      close_long_strike_single_leg_1: closeLongStrikeSingleLeg1,
-      close_long_strike_single_leg_2: closeLongStrikeSingleLeg2
+      orders: [
+        {
+          entry_spx_price: entrySpx1,
+          base_atm_price: baseAtm1,
+          contracts: contracts1,
+          option_type: optionType1,
+          close_short_strike: closeShortStrike1,
+          close_long_strike: closeLongStrike1,
+          limt_order_type_limit: limtOrderTypeLimit1,
+          close_short_strike_combo: closeShortStrikeCombo1,
+          close_long_strike_combo: closeLongStrikeCombo1,
+          close_long_strike_single_leg: closeLongStrikeSingleLeg1
+        },
+        {
+          entry_spx_price: entrySpx2,
+          base_atm_price: baseAtm2,
+          contracts: contracts2,
+          option_type: optionType2,
+          close_short_strike: closeShortStrike2,
+          close_long_strike: closeLongStrike2,
+          limt_order_type_limit: limtOrderTypeLimit2,
+          close_short_strike_combo: closeShortStrikeCombo2,
+          close_long_strike_combo: closeLongStrikeCombo2,
+          close_long_strike_single_leg: closeLongStrikeSingleLeg2
+        }
+      ]
     }
     
     try {
@@ -127,33 +165,6 @@ function OrderSetup({ onBack }) {
     }
   }, [frequency, rollingNumber, atmTrigger, spxTrigger, baseAtmTrigger, entrySpx1, entrySpx2, baseAtm1, baseAtm2, contracts1, contracts2, optionType1, optionType2, closeShortStrike1, closeShortStrike2, closeLongStrike1, closeLongStrike2, limtOrderTypeLimit1, limtOrderTypeLimit2, closeShortStrikeCombo1, closeShortStrikeCombo2, closeLongStrikeCombo1, closeLongStrikeCombo2, closeLongStrikeSingleLeg1, closeLongStrikeSingleLeg2])
 
-  const handleReset = useCallback(() => {
-    setFrequency('')
-    setRollingNumber('')
-    setAtmTrigger('')
-    setSpxTrigger('')
-    setBaseAtmTrigger('')
-    setEntrySpx1('')
-    setEntrySpx2('')
-    setBaseAtm1('')
-    setBaseAtm2('')
-    setContracts1('')
-    setContracts2('')
-    setOptionType1('')
-    setOptionType2('')
-    setCloseShortStrike1('')
-    setCloseShortStrike2('')
-    setCloseLongStrike1('')
-    setCloseLongStrike2('')
-    setLimtOrderTypeLimit1('')
-    setLimtOrderTypeLimit2('')
-    setCloseShortStrikeCombo1('')
-    setCloseShortStrikeCombo2('')
-    setCloseLongStrikeCombo1('')
-    setCloseLongStrikeCombo2('')
-    setCloseLongStrikeSingleLeg1('')
-    setCloseLongStrikeSingleLeg2('')
-  }, [])
 
   const handleSort = useCallback((column) => {
     if (sortColumn === column) {
@@ -168,22 +179,27 @@ function OrderSetup({ onBack }) {
     if (!sortColumn) return records
     
     return [...records].sort((a, b) => {
-      let aVal = a[sortColumn]
-      let bVal = b[sortColumn]
-      
-      // Convert to numbers if possible
-      const aNum = parseFloat(aVal)
-      const bNum = parseFloat(bVal)
-      
-      if (!isNaN(aNum) && !isNaN(bNum)) {
-        return sortDirection === 'asc' ? aNum - bNum : bNum - aNum
+      let aVal = a[sortColumn];
+      let bVal = b[sortColumn];
+      // Special handling for timestamp/date columns
+      if (sortColumn && sortColumn.toLowerCase().includes('time')) {
+        const aDate = new Date(aVal);
+        const bDate = new Date(bVal);
+        if (!isNaN(aDate) && !isNaN(bDate)) {
+          return sortDirection === 'asc' ? aDate - bDate : bDate - aDate;
+        }
       }
-      
+      // Convert to numbers if possible
+      const aNum = parseFloat(aVal);
+      const bNum = parseFloat(bVal);
+      if (!isNaN(aNum) && !isNaN(bNum)) {
+        return sortDirection === 'asc' ? aNum - bNum : bNum - aNum;
+      }
       // String comparison
-      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1
-      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1
-      return 0
-    })
+      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
   }, [records, sortColumn, sortDirection])
 
   useEffect(() => {
@@ -205,7 +221,8 @@ function OrderSetup({ onBack }) {
           
           // Handle tick data for SPX price
           if (data.type === 'tick' && data.symbol === 'SPX') {
-            setSpxPrice(data.price)
+            setPrevSpxPrice((prev) => spxPrice);
+            setSpxPrice(data.price);
           }
           
           // Check for application_state type OR if the wrapper exists
@@ -289,20 +306,8 @@ function OrderSetup({ onBack }) {
       }}>
         <h1 style={{ margin: 0, fontSize: '24px' }}>Order Setup</h1>
         <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-          <div style={fieldContainerStyle}>
-            <div style={{
-              width: '12px',
-              height: '12px',
-              borderRadius: '50%',
-              backgroundColor: flaskApiStatus === 'Connected' ? '#22c55e' : flaskApiStatus === 'Error' ? '#fbbf24' : '#ef4444'
-            }}></div>
-            <span style={{ fontSize: '14px' }}>
-              API: <span style={{ 
-                color: flaskApiStatus === 'Connected' ? '#86efac' : '#fca5a5',
-                fontWeight: '500'
-              }}>{flaskApiStatus}</span>
-            </span>
-          </div>
+          {/* 1st indicator (if any) can go here */}
+          {/* WebSocket indicator - now second */}
           <div style={fieldContainerStyle}>
             <div style={{
               width: '12px',
@@ -313,11 +318,39 @@ function OrderSetup({ onBack }) {
               animation: isReceivingData ? 'pulse 1s infinite' : 'none'
             }}></div>
             <span style={{ fontSize: '14px' }}>
-              WS: <span style={{ 
-                color: wsStatus === 'Connected' ? '#86efac' : '#fca5a5',
+              WS: {' '}
+              <span style={{
+                color:
+                  wsStatus === 'Connected'
+                    ? (isReceivingData ? '#22c55e' : '#86efac')
+                    : wsStatus === 'Error'
+                      ? '#fbbf24'
+                      : '#fca5a5',
+                fontWeight: '500',
+                minWidth: 90,
+                display: 'inline-block'
+              }}>
+                {wsStatus === 'Connected'
+                  ? (isReceivingData ? 'Receiving' : 'Connected')
+                  : wsStatus === 'Error'
+                    ? 'Error'
+                    : 'Disconnected'}
+              </span>
+            </span>
+          </div>
+          {/* Flask API indicator - now after WS */}
+          <div style={fieldContainerStyle}>
+            <div style={{
+              width: '12px',
+              height: '12px',
+              borderRadius: '50%',
+              backgroundColor: flaskApiStatus === 'Connected' ? '#22c55e' : flaskApiStatus === 'Error' ? '#fbbf24' : '#ef4444'
+            }}></div>
+            <span style={{ fontSize: '14px' }}>
+              Flask API: <span style={{ 
+                color: flaskApiStatus === 'Connected' ? '#86efac' : '#fca5a5',
                 fontWeight: '500'
-              }}>{wsStatus}</span>
-              {isReceivingData && <span style={{ color: '#86efac', marginLeft: '5px' }}>● Receiving</span>}
+              }}>{flaskApiStatus}</span>
             </span>
           </div>
           <button
@@ -350,14 +383,56 @@ function OrderSetup({ onBack }) {
             maxHeight: 'calc(100vh - 200px)',
             overflow: 'auto'
           }}>
-            <h2 style={{ marginTop: 0, color: '#1f2937', fontSize: '18px' }}>ATM Straddle Tracker Records</h2>
-            <div style={{ display: 'flex', gap: '30px', marginBottom: '15px', padding: '10px', backgroundColor: '#f9fafb', borderRadius: '4px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginBottom: '15px' }}>
+              <h2 style={{ margin: 0, color: '#1f2937', fontSize: '18px', display: 'inline-block' }}>ATM Straddle Tracker Records</h2>
               {spxPrice !== null && (
-                <div>
-                  <span style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>SPX Price: </span>
-                  <span style={{ fontSize: '14px', color: '#f59e0b', fontWeight: '700', fontFamily: 'monospace' }}>{spxPrice.toFixed(2)}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: '600' }}>SPX Price: </span>
+                  {(() => {
+                    let color = '#d97706';
+                    let arrow = '';
+                    let percent = null;
+                    if (prevSpxPrice !== null && spxPrice !== null) {
+                      if (spxPrice > prevSpxPrice) {
+                        color = '#22c55e'; // green
+                        arrow = '▲';
+                      } else if (spxPrice < prevSpxPrice) {
+                        color = '#ef4444'; // red
+                        arrow = '▼';
+                      }
+                      percent = ((spxPrice - prevSpxPrice) / prevSpxPrice) * 100;
+                    }
+                    return (
+                      <>
+                        <span style={{
+                          fontSize: '22px',
+                          color,
+                          fontWeight: '900',
+                          fontFamily: 'monospace',
+                          letterSpacing: '1px',
+                          textShadow: '0 1px 4px #fcd34d, 0 0px 2px #fff',
+                          transition: 'color 0.3s'
+                        }}>
+                          {spxPrice.toFixed(2)} {arrow}
+                        </span>
+                        {percent !== null && (
+                          <span style={{
+                            fontSize: '13px',
+                            color,
+                            fontWeight: '700',
+                            marginLeft: '8px',
+                            fontFamily: 'monospace'
+                          }}>
+                            ({percent > 0 ? '+' : ''}{percent.toFixed(2)}%)
+                          </span>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               )}
+            </div>
+            <div style={{ display: 'flex', gap: '30px', padding: '10px', backgroundColor: '#f9fafb', borderRadius: '4px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
               <div>
                 <span style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>Highest ATM Straddle Value: </span>
                 <span style={{ fontSize: '14px', color: '#1f2937', fontWeight: '600' }}>{dayHighestAtmStrike ?? 'N/A'}</span>
@@ -374,7 +449,7 @@ function OrderSetup({ onBack }) {
                 <table style={{ borderCollapse: 'collapse', fontSize: '11px' }}>
                   <thead>
                     <tr>
-                      <th style={{ padding: '4px 8px', textAlign: 'left', borderBottom: '1px solid #d1d5db', color: '#6b7280', fontWeight: '500' }}></th>
+                      <th style={{ padding: '8px', textAlign: 'left', fontWeight: '600', color: '#374151', whiteSpace: 'nowrap' }}></th>
                       <th style={{ padding: '4px 8px', textAlign: 'center', borderBottom: '1px solid #d1d5db', color: '#6b7280', fontWeight: '500' }}>Call</th>
                       <th style={{ padding: '4px 8px', textAlign: 'center', borderBottom: '1px solid #d1d5db', color: '#6b7280', fontWeight: '500' }}>Put</th>
                     </tr>
@@ -424,7 +499,7 @@ function OrderSetup({ onBack }) {
                         Timestamp {sortColumn === 'timestamp' && (sortDirection === 'asc' ? '▲' : '▼')}
                       </th>
                       <th onClick={() => handleSort('symbol_price')} style={{ padding: '8px', textAlign: 'left', fontWeight: '600', color: '#374151', whiteSpace: 'nowrap', cursor: 'pointer', userSelect: 'none' }}>
-                        Symbol Price {sortColumn === 'symbol_price' && (sortDirection === 'asc' ? '▲' : '▼')}
+                        SPX Price {sortColumn === 'symbol_price' && (sortDirection === 'asc' ? '▲' : '▼')}
                       </th>
                       <th onClick={() => handleSort('atm_strike')} style={{ padding: '8px', textAlign: 'left', fontWeight: '600', color: '#374151', whiteSpace: 'nowrap', cursor: 'pointer', userSelect: 'none' }}>
                         ATM Strike {sortColumn === 'atm_strike' && (sortDirection === 'asc' ? '▲' : '▼')}
@@ -441,11 +516,14 @@ function OrderSetup({ onBack }) {
                       <th onClick={() => handleSort('put_ask')} style={{ padding: '8px', textAlign: 'left', fontWeight: '600', color: '#374151', whiteSpace: 'nowrap', cursor: 'pointer', userSelect: 'none' }}>
                         Put Ask {sortColumn === 'put_ask' && (sortDirection === 'asc' ? '▲' : '▼')}
                       </th>
+                      <th onClick={() => handleSort('sum_put_call_ask')} style={{ padding: '8px', textAlign: 'left', fontWeight: '600', color: '#374151', whiteSpace: 'nowrap', cursor: 'pointer', userSelect: 'none' }}>
+                        Sum Put+Call Ask {sortColumn === 'sum_put_call_ask' && (sortDirection === 'asc' ? '▲' : '▼')}
+                      </th>
                       <th onClick={() => handleSort('difference')} style={{ padding: '8px', textAlign: 'left', fontWeight: '600', color: '#374151', whiteSpace: 'nowrap', cursor: 'pointer', userSelect: 'none' }}>
                         Difference {sortColumn === 'difference' && (sortDirection === 'asc' ? '▲' : '▼')}
                       </th>
                       <th onClick={() => handleSort('x_diffs_total')} style={{ padding: '8px', textAlign: 'left', fontWeight: '600', color: '#374151', whiteSpace: 'nowrap', cursor: 'pointer', userSelect: 'none' }}>
-                        X Diffs Total {sortColumn === 'x_diffs_total' && (sortDirection === 'asc' ? '▲' : '▼')}
+                        x_diffs_total {sortColumn === 'x_diffs_total' && (sortDirection === 'asc' ? '▲' : '▼')}
                       </th>
                       <th onClick={() => handleSort('call_spread')} style={{ padding: '8px', textAlign: 'left', fontWeight: '600', color: '#374151', whiteSpace: 'nowrap', cursor: 'pointer', userSelect: 'none' }}>
                         Call Spread {sortColumn === 'call_spread' && (sortDirection === 'asc' ? '▲' : '▼')}
@@ -468,6 +546,7 @@ function OrderSetup({ onBack }) {
                         <td style={{ padding: '8px', color: '#6b7280', whiteSpace: 'nowrap' }}>{record.call_ask}</td>
                         <td style={{ padding: '8px', color: '#6b7280', whiteSpace: 'nowrap' }}>{record.put_bid}</td>
                         <td style={{ padding: '8px', color: '#6b7280', whiteSpace: 'nowrap' }}>{record.put_ask}</td>
+                        <td style={{ padding: '8px', color: '#6b7280', whiteSpace: 'nowrap' }}>{record.sum_put_call_ask}</td>
                         <td style={{ padding: '8px', color: '#6b7280', whiteSpace: 'nowrap' }}>{record.difference}</td>
                         <td style={{ padding: '8px', color: '#6b7280', whiteSpace: 'nowrap' }}>{record.x_diffs_total}</td>
                         <td style={{ padding: '8px', color: '#6b7280', whiteSpace: 'nowrap' }}>{record.call_spread}</td>
@@ -550,6 +629,9 @@ function OrderSetup({ onBack }) {
                 />
               </div>
               
+              <div style={{ margin: '16px 0 4px 0', borderTop: '2px solid #3b82f6', paddingTop: '8px' }}>
+                <h3 style={{ margin: 0, color: '#1f2937', fontSize: '13px', fontWeight: '700', textTransform: 'uppercase', fontFamily: 'monospace' }}>Manual Entry</h3>
+              </div>
               <div style={fieldContainerStyle}>
                 <label style={labelStyle}>
                   Entry Level SPX Price
@@ -608,18 +690,24 @@ function OrderSetup({ onBack }) {
                 <label style={labelStyle}>
                   Option Type Put Call
                 </label>
-                <input
-                  type="text"
+                <select
                   value={optionType1}
                   onChange={(e) => setOptionType1(e.target.value)}
-                  style={inputStyle}
-                />
-                <input
-                  type="text"
+                  style={{ ...inputStyle, minWidth: 70 }}
+                >
+                  <option value="">Select</option>
+                  <option value="Call">Call</option>
+                  <option value="Put">Put</option>
+                </select>
+                <select
                   value={optionType2}
                   onChange={(e) => setOptionType2(e.target.value)}
-                  style={inputStyle}
-                />
+                  style={{ ...inputStyle, minWidth: 70 }}
+                >
+                  <option value="">Select</option>
+                  <option value="Call">Call</option>
+                  <option value="Put">Put</option>
+                </select>
               </div>
               
               <div style={{ borderTop: '2px solid #3b82f6', paddingTop: '4px', marginTop: '4px' }}>
@@ -742,62 +830,38 @@ function OrderSetup({ onBack }) {
                 </div>
               </div>
               
-              <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
-                <button
-                  type="submit"
-                  style={{
-                    flex: 1,
-                    padding: '4px 8px',
-                    backgroundColor: '#3b82f6',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '0',
-                    fontSize: '11px',
-                    fontWeight: '700',
-                    cursor: 'pointer',
-                    textTransform: 'uppercase',
-                    fontFamily: 'monospace'
-                  }}
-                >
+              <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '16px', marginBottom: '8px' }}>
+                <StatusIndicator
+                  wsStatus={wsStatus}
+                  isReceivingData={isReceivingData}
+                  flaskApiStatus={flaskApiStatus}
+                  fieldContainerStyle={fieldContainerStyle}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
+                <button type="submit" style={{ padding: '8px 20px', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', fontSize: '14px', cursor: 'pointer', fontWeight: 600 }}>
                   Submit
                 </button>
-                <button
-                  type="button"
-                  onClick={handleReset}
-                  style={{
-                    flex: 1,
-                    padding: '4px 8px',
-                    backgroundColor: '#6b7280',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '0',
-                    fontSize: '11px',
-                    fontWeight: '700',
-                    cursor: 'pointer',
-                    textTransform: 'uppercase',
-                    fontFamily: 'monospace'
-                  }}
-                >
+                <button type="button" onClick={handleReset} style={{ padding: '8px 20px', backgroundColor: '#f3f4f6', color: '#1f2937', border: '1px solid #d1d5db', borderRadius: '4px', fontSize: '14px', cursor: 'pointer', fontWeight: 600 }}>
                   Reset
                 </button>
               </div>
+              <footer
+                style={{
+                  color: '#eff6ff',
+                  textAlign: 'center',
+                  padding: '20px',
+                  fontSize: '14px'
+                }}
+              >
+                © {new Date().getFullYear()} Trading Dashboard. All rights reserved.
+              </footer>
             </form>
           </div>
         </div>
       </main>
-
-      {/* Footer */}
-      <footer style={{
-        backgroundColor: '#3b82f6',
-        color: '#eff6ff',
-        textAlign: 'center',
-        padding: '20px',
-        fontSize: '14px'
-      }}>
-        © {new Date().getFullYear()} Trading Dashboard. All rights reserved.
-      </footer>
     </div>
-  )
+  );
 }
 
 export default OrderSetup
