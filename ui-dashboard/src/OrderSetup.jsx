@@ -47,8 +47,8 @@ function OrderSetup({ onBack }) {
     setCloseShortStrike2('');
     setCloseLongStrike1('');
     setCloseLongStrike2('');
-    setLimtOrderTypeLimit1('');
-    setLimtOrderTypeLimit2('');
+    setLimitOrderTypeLimit1('');
+    setLimitOrderTypeLimit2('');
     setCloseShortStrikeCombo1('');
     setCloseShortStrikeCombo2('');
     setCloseLongStrikeCombo1('');
@@ -92,8 +92,8 @@ function OrderSetup({ onBack }) {
   const [closeShortStrike2, setCloseShortStrike2] = useState('')
   const [closeLongStrike1, setCloseLongStrike1] = useState('')
   const [closeLongStrike2, setCloseLongStrike2] = useState('')
-  const [limtOrderTypeLimit1, setLimtOrderTypeLimit1] = useState('')
-  const [limtOrderTypeLimit2, setLimtOrderTypeLimit2] = useState('')
+  const [limitOrderTypeLimit1, setLimitOrderTypeLimit1] = useState('')
+  const [limitOrderTypeLimit2, setLimitOrderTypeLimit2] = useState('')
   // Cancel Open Pending Orders
   const [closeShortStrikeCombo1, setCloseShortStrikeCombo1] = useState('')
   const [closeShortStrikeCombo2, setCloseShortStrikeCombo2] = useState('')
@@ -122,7 +122,7 @@ function OrderSetup({ onBack }) {
           option_type: optionType1,
           close_short_strike: closeShortStrike1,
           close_long_strike: closeLongStrike1,
-          limt_order_type_limit: limtOrderTypeLimit1,
+          limit_order_type_limit: limitOrderTypeLimit1,
           close_short_strike_combo: closeShortStrikeCombo1,
           close_long_strike_combo: closeLongStrikeCombo1,
           close_long_strike_single_leg: closeLongStrikeSingleLeg1
@@ -134,7 +134,7 @@ function OrderSetup({ onBack }) {
           option_type: optionType2,
           close_short_strike: closeShortStrike2,
           close_long_strike: closeLongStrike2,
-          limt_order_type_limit: limtOrderTypeLimit2,
+          limit_order_type_limit: limitOrderTypeLimit2,
           close_short_strike_combo: closeShortStrikeCombo2,
           close_long_strike_combo: closeLongStrikeCombo2,
           close_long_strike_single_leg: closeLongStrikeSingleLeg2
@@ -163,7 +163,7 @@ function OrderSetup({ onBack }) {
       console.error('Error submitting order setup:', error)
       alert('Error saving order setup')
     }
-  }, [frequency, rollingNumber, atmTrigger, spxTrigger, baseAtmTrigger, entrySpx1, entrySpx2, baseAtm1, baseAtm2, contracts1, contracts2, optionType1, optionType2, closeShortStrike1, closeShortStrike2, closeLongStrike1, closeLongStrike2, limtOrderTypeLimit1, limtOrderTypeLimit2, closeShortStrikeCombo1, closeShortStrikeCombo2, closeLongStrikeCombo1, closeLongStrikeCombo2, closeLongStrikeSingleLeg1, closeLongStrikeSingleLeg2])
+  }, [frequency, rollingNumber, atmTrigger, spxTrigger, baseAtmTrigger, entrySpx1, entrySpx2, baseAtm1, baseAtm2, contracts1, contracts2, optionType1, optionType2, closeShortStrike1, closeShortStrike2, closeLongStrike1, closeLongStrike2, limitOrderTypeLimit1, limitOrderTypeLimit2, closeShortStrikeCombo1, closeShortStrikeCombo2, closeLongStrikeCombo1, closeLongStrikeCombo2, closeLongStrikeSingleLeg1, closeLongStrikeSingleLeg2])
 
 
   const handleSort = useCallback((column) => {
@@ -756,14 +756,14 @@ function OrderSetup({ onBack }) {
                     </label>
                     <input
                       type="text"
-                      value={limtOrderTypeLimit1}
-                      onChange={(e) => setLimtOrderTypeLimit1(e.target.value)}
+                      value={limitOrderTypeLimit1}
+                      onChange={(e) => setLimitOrderTypeLimit1(e.target.value)}
                       style={inputStyle}
                     />
                     <input
                       type="text"
-                      value={limtOrderTypeLimit2}
-                      onChange={(e) => setLimtOrderTypeLimit2(e.target.value)}
+                      value={limitOrderTypeLimit2}
+                      onChange={(e) => setLimitOrderTypeLimit2(e.target.value)}
                       style={inputStyle}
                     />
                   </div>
