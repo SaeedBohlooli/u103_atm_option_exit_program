@@ -75,6 +75,8 @@ def create_straddle_tracker_wrapper_object(app_config, application_state, atm_st
     last_atm_strike = int(v) if len(atm_straddle_tracker_df) > 0 and pd.notna(v := atm_straddle_tracker_df['atm_strike'].iloc[-1]) else 0
     diff_high_base = highest_atm_strike - atm_strike
     diff_base_last = atm_strike - last_atm_strike
+    # last_x_diffs_total = to_py(round(atm_straddle_tracker_df['x_diffs_total'].iloc[-1]) if len(atm_straddle_tracker_df) > 0 else 0)
+    last_x_diffs_total = atm_straddle_tracker_df['x_diffs_total'].iloc[-1]
 
     straddle_tracker = {
         'symbol': application_state.get('user_input', {}).get('option_class', 'SPX'),
@@ -89,6 +91,7 @@ def create_straddle_tracker_wrapper_object(app_config, application_state, atm_st
         'put_spread_min':put_spread_min,
         'call_spread_latest':call_spread_latest,
         'put_spread_latest':put_spread_latest,
+        'last_x_diffs_total': last_x_diffs_total,
         'records': atm_straddle_tracker_df.to_dict('records')
     }
     return straddle_tracker

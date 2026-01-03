@@ -1,39 +1,42 @@
+import random
+
 import requests
 print('# ###########################')
 
 host= '127.0.0.1'
 port = 5103
 
+import random
+
+
 def get_setup_order():
-    d = {'api_request_id': '20251225-204024',
-         'atm_trigger': '',
-         'base_atm_trigger': '',
-         'frequency': '',
+    x = random.randint(1,1000)
+    d = {
+        'web_request_id': f'20260102-124150-1-{x}',
+        'status': 'WEB_SUBMITTED',
          'request_type': 'SETUP_ORDER',
          'rolling_number': '',
-         'spx_price_trigger': '',
-         'orders': [{'base_atm_price': '',
-                     'close_long_strike': '',
-                     'close_long_strike_combo': '',
-                     'close_long_strike_single_leg': '',
-                     'close_short_strike': '',
-                     'close_short_strike_combo': '',
-                     'contracts': '',
-                     'entry_spx_price': '',
-                     'limit_order_type_limit': '',
-                     'option_type': ''},
-                    {'base_atm_price': '',
-                     'close_long_strike': '',
-                     'close_long_strike_combo': '',
-                     'close_long_strike_single_leg': '',
-                     'close_short_strike': '',
-                     'close_short_strike_combo': '',
-                     'contracts': '',
-                     'entry_spx_price': '',
-                     'limit_order_type_limit': '',
-                     'option_type': ''}],
-         'status': 'WEB_SUBMITTED'}
-    return d , "api/send_request" , "post"
+         'atm_trigger': -1, #a
+         'spx_price_trigger': 1, #b
+         'base_atm_trigger': 5, #c
+         'frequency': '',
+         'orders': [{
+                     'entry_spx_price': 6880, #d
+                     'base_atm_price': 6850, #e
+                     'contracts': 1, #f
+                     'option_right': 'C', #g
+                     'close_short_strike': 0, #h
+                     'close_long_strike': 6850, #i
+                     'cancel_short_strike_combo': 0, #k
+                     'cancel_long_strike_combo': 0,  #l
+                     'cancel_long_strike_single_leg': 0,  #m
+                     'cancel_short_strike_single_leg': 0,  #n
+                     'limit_order_type_limit': '', # j
+                    }
+]
+
+    }
+    return d , "api/send-request" , "post"
 
 
 d , u , m = get_setup_order()

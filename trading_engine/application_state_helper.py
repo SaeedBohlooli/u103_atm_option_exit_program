@@ -10,3 +10,5 @@ def init_application_state(application_state):
     application_state.get('user_input', {}).setdefault('rolling_window_size_for_diff', 4)
     application_state['subscribed_con_ids'] = []  # need to get new quotes ...
     application_state.setdefault('symbols', {}).setdefault('SPX', {'current_price': None})
+    application_state['user_requests'] = []
+    application_state['vars'] = {}

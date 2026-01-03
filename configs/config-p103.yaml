@@ -38,11 +38,11 @@ files:
 order_setup:
   conditions:
     cond_1:
-      - last_x_diff_total > atm_trigger # a
+      - last_x_diffs_total > atm_trigger # a
       - current_price < user_input_entry_spx_price - user_input_spx_price_trigger
     cond_2:
       - day_highest_atm_strike > user_input_base_atm_price + base_atm_trigger  # F > e + c
-      - current_price < user_input_spx_price - user_input_spx_price_trigger
+      - current_price < user_input_entry_spx_price - user_input_spx_price_trigger
   master_condition: cond_1 or cond_2
 
 
