@@ -4,6 +4,7 @@ from trading_engine import position_helper
 from trading_utils import ib_pricing_async
 from trading_utils import ib_positions_async
 from trading_utils import ib_orders_async
+from trading_utils import ib_contract
 
 async def setup_order(ib,app_config,application_state, user_request ):
     symbol = application_state.get('user_input', {}).get('symbol')
@@ -120,4 +121,23 @@ async def setup_order(ib,app_config,application_state, user_request ):
                     d['memo'] += f'|cancelling_single_leg_{strike_for_cancel}'
                     ib_orders_async.cancel_order_by_order_id(ib, order_id=ib_order.get('order_id'))
 
+        if cancel_short_strike_combo is not None and cancel_long_strike_combo is not None:
+            for ib_order in ib_open_orders:
+                if ib_order.get('order_type') != 'BAG':
+                    continue
+                for leg in ib_order.get('legs', []):
+                    leg_con_id = leg['con_id']
+                    contract = ib_contract.get_option_contract_by_conid(ib, leg_con_id)
+                    if contract is None:
+                        logger.warning(f"@@@@  Contract not found for con_id: {leg_con_id}, skipping leg.")
+                        continue
+                    logger.info(f" contract found for con_id: {leg_con_id}, contract: {contract}")
+
+
+                if ( order_symbol == symbol and
+                        order_strike in [cancel_short_strike_combo, cancel_long_strike_combo] and
+                        order_action in ['BUY']):
+                    logger.info(f"  Cancelling combo order with strike: {order_strike}, right: {order_right}, status: {order_status}")
+                    d['memo'] += f'|cancelling_combo_{order_strike}'
+                    ib_orders_async.cancel_order_by_order_id(ib, order_id=ib_order.get('order_id'))
 
